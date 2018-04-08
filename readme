@@ -1,0 +1,5 @@
+1.copy jcFeather folder to any folder
+2.modify module file content,jcFeather.module to your own directory
+3.copy jcfeather.module to ~/maya/201x-x64/modules
+4.add ./jcFeather/bin folder to your LD_LIBRARY_PATH env
+

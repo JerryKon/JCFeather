@@ -1,0 +1,108 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <None Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="boostTools">
+      <UniqueIdentifier>{b17f01bd-3b94-437b-9e90-2bdb0f71bb47}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="featherGen">
+      <UniqueIdentifier>{36fe806e-23b4-490f-936d-1af3f77d9b2b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libSource">
+      <UniqueIdentifier>{5cbe1b19-2fc9-4748-b1ac-2bdfc4cd83ab}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\featherGen\cell.cpp">
+      <Filter>featherGen</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherGen\featherGenBase.cpp">
+      <Filter>featherGen</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherGen\featherInfo.cpp">
+      <Filter>featherGen</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherGen\singleFeather.cpp">
+      <Filter>featherGen</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherGen\surfaceTurtleArray.cpp">
+      <Filter>featherGen</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherGen\surfaceTurtleIO.cpp">
+      <Filter>featherGen</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherGen\kdtree.cpp">
+      <Filter>libSource</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherGen\HashTable.cpp">
+      <Filter>libSource</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherGen\noise.cpp">
+      <Filter>libSource</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherGen\xmlFeatherAttr.cpp">
+      <Filter>featherGen</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherGen\mathFunctions.cpp">
+      <Filter>libSource</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherGen\spline.cpp">
+      <Filter>libSource</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherGen\boostTools.cpp">
+      <Filter>boostTools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherGen\splineLib.cpp">
+      <Filter>libSource</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\featherGen\cell.h">
+      <Filter>featherGen</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherGen\featherGenBase.h">
+      <Filter>featherGen</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherGen\featherInfo.h">
+      <Filter>featherGen</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherGen\surfaceTurtleArray.h">
+      <Filter>featherGen</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherGen\surfaceTurtleIO.h">
+      <Filter>featherGen</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherGen\kdtree.h">
+      <Filter>libSource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherGen\HashTable.h">
+      <Filter>libSource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherGen\noise.h">
+      <Filter>libSource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherGen\pointInPolygon.h">
+      <Filter>libSource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherGen\xmlFeatherAttr.h">
+      <Filter>featherGen</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherGen\mathFunctions.h">
+      <Filter>libSource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherGen\spline.h">
+      <Filter>libSource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherGen\boostTools.h">
+      <Filter>boostTools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherGen\splineLib.h">
+      <Filter>libSource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherGen\singleFeather.h">
+      <Filter>featherGen</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

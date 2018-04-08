@@ -1,0 +1,2728 @@
+global string $currentPaintPreFeather="";
+global string $paintWeightNamePrefix="preConWei";
+global string $paintWeightContext="art3dPaintWeight";
+global string $jcFeatherPainter="jcFeatherPaintToolCtx";
+
+
+//----those global variables are uniform attributes for arnold and 3delight
+//----add those attributes to meshes so that the renderer can export the data for later rendering.
+global string $jcMeshShell_S_ArnoldName = "mtoa_uniform_jcshells";
+global string $jcMeshShell_T_ArnoldName = "mtoa_uniform_jcshellt";
+global string $jcMeshShell_ID_ArnoldName = "mtoa_uniform_jcshellid";
+
+global string $jcMeshShell_S_DelightName = "delightUniformFloatjcshells";
+global string $jcMeshShell_T_DelightName = "delightUniformFloatjcshellt";
+global string $jcMeshShell_ID_DelightName = "delightUniformFloatjcshellid";
+
+global string $jcMeshOperateRender;
+
+//-----set jcFeather's default ramp attribute.
+global proc jcFeatherDefaultRampAttr(string $nodeName)
+{
+	setAttr ($nodeName+".forcePerSegmentScale[0].forcePerSegmentScale_Position") 0.0;				
+	setAttr ($nodeName+".forcePerSegmentScale[0].forcePerSegmentScale_FloatValue") 1.0;
+	setAttr ($nodeName+".forcePerSegmentScale[0].forcePerSegmentScale_Interp") 0;
+		
+	setAttr ($nodeName+".forceRotateScale[0].forceRotateScale_Position") 0.0;				
+	setAttr ($nodeName+".forceRotateScale[0].forceRotateScale_FloatValue") 1.0;
+	setAttr ($nodeName+".forceRotateScale[0].forceRotateScale_Interp") 0;
+	
+	setAttr ($nodeName+".rachisThickScale[0].rachisThickScale_Position") 0.0;				
+	setAttr ($nodeName+".rachisThickScale[0].rachisThickScale_FloatValue") 0.2;
+	setAttr ($nodeName+".rachisThickScale[0].rachisThickScale_Interp") 3;
+	setAttr ($nodeName+".rachisThickScale[1].rachisThickScale_Position") 1;				
+	setAttr ($nodeName+".rachisThickScale[1].rachisThickScale_FloatValue") 0.1;
+	setAttr ($nodeName+".rachisThickScale[1].rachisThickScale_Interp") 3;
+	
+	setAttr ($nodeName+".leftBarbuleLengthScale[0].leftBarbuleLengthScale_Position") 0.1;				
+	setAttr ($nodeName+".leftBarbuleLengthScale[0].leftBarbuleLengthScale_FloatValue") 0;
+	setAttr ($nodeName+".leftBarbuleLengthScale[0].leftBarbuleLengthScale_Interp") 3;
+	setAttr ($nodeName+".leftBarbuleLengthScale[1].leftBarbuleLengthScale_Position") 0.25;				
+	setAttr ($nodeName+".leftBarbuleLengthScale[1].leftBarbuleLengthScale_FloatValue") 0.8;
+	setAttr ($nodeName+".leftBarbuleLengthScale[1].leftBarbuleLengthScale_Interp") 3;
+	setAttr ($nodeName+".leftBarbuleLengthScale[2].leftBarbuleLengthScale_Position") 1;				
+	setAttr ($nodeName+".leftBarbuleLengthScale[2].leftBarbuleLengthScale_FloatValue") 0;
+	setAttr ($nodeName+".leftBarbuleLengthScale[2].leftBarbuleLengthScale_Interp") 3;
+	
+	setAttr ($nodeName+".rightBarbuleLengthScale[0].rightBarbuleLengthScale_Position") 0.1;				
+	setAttr ($nodeName+".rightBarbuleLengthScale[0].rightBarbuleLengthScale_FloatValue") 0;
+	setAttr ($nodeName+".rightBarbuleLengthScale[0].rightBarbuleLengthScale_Interp") 3;
+	setAttr ($nodeName+".rightBarbuleLengthScale[1].rightBarbuleLengthScale_Position") 0.25;				
+	setAttr ($nodeName+".rightBarbuleLengthScale[1].rightBarbuleLengthScale_FloatValue") 0.8;
+	setAttr ($nodeName+".rightBarbuleLengthScale[1].rightBarbuleLengthScale_Interp") 3;
+	setAttr ($nodeName+".rightBarbuleLengthScale[2].rightBarbuleLengthScale_Position") 1;				
+	setAttr ($nodeName+".rightBarbuleLengthScale[2].rightBarbuleLengthScale_FloatValue") 0;
+	setAttr ($nodeName+".rightBarbuleLengthScale[2].rightBarbuleLengthScale_Interp") 3;
+	
+	setAttr ($nodeName+".barbuleDensity[0].barbuleDensity_Position") 0.0;				
+	setAttr ($nodeName+".barbuleDensity[0].barbuleDensity_FloatValue") 1;
+	setAttr ($nodeName+".barbuleDensity[0].barbuleDensity_Interp") 3;	
+	
+	setAttr ($nodeName+".barbuleThickScale[0].barbuleThickScale_Position") 0.0;				
+	setAttr ($nodeName+".barbuleThickScale[0].barbuleThickScale_FloatValue") 1;
+	setAttr ($nodeName+".barbuleThickScale[0].barbuleThickScale_Interp") 3;
+	
+	setAttr ($nodeName+".barbuleThickAdjust[0].barbuleThickAdjust_Position") 0.0;				
+	setAttr ($nodeName+".barbuleThickAdjust[0].barbuleThickAdjust_FloatValue") 1.0;
+	setAttr ($nodeName+".barbuleThickAdjust[0].barbuleThickAdjust_Interp") 3;	
+	
+	
+	setAttr ($nodeName+".barbuleUpDownBarbule[0].barbuleUpDownBarbule_Position") 0;				
+	setAttr ($nodeName+".barbuleUpDownBarbule[0].barbuleUpDownBarbule_FloatValue") 1;
+	setAttr ($nodeName+".barbuleUpDownBarbule[0].barbuleUpDownBarbule_Interp") 3;	
+	
+	setAttr ($nodeName+".barbuleUpDownRachis[0].barbuleUpDownRachis_Position") 0;				
+	setAttr ($nodeName+".barbuleUpDownRachis[0].barbuleUpDownRachis_FloatValue") 1;
+	setAttr ($nodeName+".barbuleUpDownRachis[0].barbuleUpDownRachis_Interp") 3;	
+	
+	setAttr ($nodeName+".kbRotate1[0].kbRotate1_Position") 0.0;				
+	setAttr ($nodeName+".kbRotate1[0].kbRotate1_FloatValue") 0.5;
+	setAttr ($nodeName+".kbRotate1[0].kbRotate1_Interp") 3;
+	
+	setAttr ($nodeName+".kbRotate2[0].kbRotate2_Position") 0.0;				
+	setAttr ($nodeName+".kbRotate2[0].kbRotate2_FloatValue") 0.5;
+	setAttr ($nodeName+".kbRotate2[0].kbRotate2_Interp") 3;	
+	
+	setAttr ($nodeName+".kbRotate3[0].kbRotate3_Position") 0.0;				
+	setAttr ($nodeName+".kbRotate3[0].kbRotate3_FloatValue") 0.5;
+	setAttr ($nodeName+".kbRotate3[0].kbRotate3_Interp") 3;	
+	
+	setAttr ($nodeName+".kbRotate4[0].kbRotate4_Position") 0.0;				
+	setAttr ($nodeName+".kbRotate4[0].kbRotate4_FloatValue") 0.5;
+	setAttr ($nodeName+".kbRotate4[0].kbRotate4_Interp") 3;	
+	
+	setAttr ($nodeName+".leftGapDensity[0].leftGapDensity_Position") 0.0;				
+	setAttr ($nodeName+".leftGapDensity[0].leftGapDensity_FloatValue") 1;
+	setAttr ($nodeName+".leftGapDensity[0].leftGapDensity_Interp") 3;
+	
+	setAttr ($nodeName+".rightGapDensity[0].rightGapDensity_Position") 0.0;				
+	setAttr ($nodeName+".rightGapDensity[0].rightGapDensity_FloatValue") 1;
+	setAttr ($nodeName+".rightGapDensity[0].rightGapDensity_Interp") 3;
+		
+}	
+
+//check if current scene has jcFeatherGlobals node, if not ,create one
+global proc checkJCFeatherGlobals()
+{
+	string $featherGlobal[]=`ls -type jcFeatherGlobals`;
+	for($node in $featherGlobal)
+		if($node =="jcFeatherGlobals")
+			return;
+			
+	int $sizeFG=`size $featherGlobal`;
+	if($sizeFG>0)
+	{
+	   duplicate -rr -n "jcFeatherGlobals" $featherGlobal[0];
+	   lockNode jcFeatherGlobals;
+	}
+}
+
+//---this function is used to fix the bug when you open a new jcFeather scene, nurbsSurface jcFeather nodes do not update.
+global proc updateJCFeatherStartNurbSurface()
+{
+	string $feather[]=`ls -type jcFeather`;
+	for($f in $feather)
+	{
+		string $cons[]=`listConnections -s 1 -d 0 -c 1 -p 1 -type "nurbsSurface" ($f+".guidSurfaceInfo")`;
+		int $sc=`size $cons`;
+		int $i=0;
+		for(;$i<$sc;$i+=2)
+		{
+			disconnectAttr $cons[$i+1] $cons[$i];
+			connectAttr $cons[$i+1] $cons[$i];
+		}
+	}	
+}
+//------------------create a single jcFeather node
+global proc string[] jcCreateSingleJCFeather()
+{
+		if(!`objExists jcFeatherGlobals`)
+		{
+			createNode jcFeatherGlobals -n jcFeatherGlobals;
+			lockNode jcFeatherGlobals;
+		}						
+		if(!`objExists jcFeatherDisplayGroup`) createNode "transform" -n "jcFeatherDisplayGroup";
+		string $featherTransform = `createNode "transform" -n "jcFeather#" `;
+		string $featherShape = `createNode "jcFeather" -n "jcFeatherShape#" -p $featherTransform `;
+		jcFeatherDefaultRampAttr($featherShape);
+		string $featherMeshTransform = `createNode "transform" -n "jcFeatherDiplay#" -p "jcFeatherDisplayGroup"`;
+		string $displayMesh = `createNode "mesh" -n "jcFeatherDiplayShape#" -p $featherMeshTransform `;	
+		setAttr ($displayMesh+".template") 1;
+		connectAttr ($featherShape+".outputMesh") ($displayMesh+".inMesh");
+				
+		setAttr ($displayMesh+".castsShadows") 0;
+		setAttr ($displayMesh+".receiveShadows") 0;
+		setAttr ($displayMesh+".motionBlur") 0;
+		setAttr ($displayMesh+".primaryVisibility") 0;
+		setAttr ($displayMesh+".visibleInReflections") 0;
+		setAttr ($displayMesh+".visibleInRefractions") 0;
+		setAttr ($displayMesh+".smoothShading") 0;
+		
+		string $result[2];
+		$result[0] = $featherTransform;
+		$result[1] = $featherShape;
+		return $result;
+	}
+	//get shape node of a dag node.
+global proc string jcGetTransformShape(string $transformNode,string $type)
+{
+	if(`nodeType $transformNode`==$type) return $transformNode;
+	
+	string $shap[]=`listRelatives -f -ni -c -s $transformNode`;
+	if(`size $shap`!=0&&`nodeType $shap[0]`==$type)
+		return $shap[0];
+	else
+		return "";
+}
+//--------------clear selected jcFeather input connections
+global proc clearJCFeatherInputs()
+{
+	string $sel[]=`ls -sl`;
+	string $shape="";
+	for($s in $sel)
+	{
+		$shape=jcGetTransformShape($s,"jcFeather");
+		
+		if($shape!="")
+		{
+			string $connect[]=`listConnections -c 1 -p 1 -s 1 -d 0 $shape`;
+			int $i=0;
+			for(;$i<(`size $connect`-1);$i+=2)
+				disconnectAttr $connect[$i+1] $connect[$i]; 
+		}
+	}
+}
+//--------------------------------------------swap left and barbule length scale ramp attributes
+global proc doExchangeBarLen()
+{
+	string $sel[]=`ls -sl`;
+	for($s in $sel)
+	{
+		string $shape=jcGetTransformShape($s,"jcFeather");
+		if($shape!="")	
+			exchangeLeftRightBarLen($shape);
+		}
+}
+
+proc setRampWithVector(string $shape,string $attr,int $id,vector $value)
+{
+	setAttr ($shape+"."+$attr+"["+$id+"]."+$attr+"_Position") ($value.x);
+	setAttr ($shape+"."+$attr+"["+$id+"]."+$attr+"_FloatValue") ($value.y);
+	setAttr ($shape+"."+$attr+"["+$id+"]."+$attr+"_Interp") ($value.z);		
+	}
+
+global proc exchangeLeftRightBarLen(string $featherShape)
+{
+			int $Lindices[]=`getAttr -mi ($featherShape+".leftBarbuleLengthScale")`;
+			int $Rindices[]=`getAttr -mi ($featherShape+".rightBarbuleLengthScale")`;
+			vector $LRamp[],$RRamp[];
+			for($id in $Lindices)
+				$LRamp[`size $LRamp`] = `getAttr ($featherShape+".leftBarbuleLengthScale["+$id+"]")`;
+			for($id in $Rindices)
+				$RRamp[`size $RRamp`] = `getAttr ($featherShape+".rightBarbuleLengthScale["+$id+"]")`;
+			
+				
+			//---------------------------------leave only one input
+			int $ii=0;	
+			for($id in $Lindices)
+			{
+				if(($ii++)>0)
+					removeMultiInstance -break true ($featherShape+".leftBarbuleLengthScale["+$id+"]");
+			}
+			$ii=0;
+			for($id in $Rindices)
+			{
+				if(($ii++)>0)
+					removeMultiInstance -break true ($featherShape+".rightBarbuleLengthScale["+$id+"]");
+			}
+			//---------------------------------leave only one input
+			
+			int $ri[]=`getAttr -mi ($featherShape+".rightBarbuleLengthScale")`;
+			int $l=$ri[0];
+			for($interP in $LRamp)
+					setRampWithVector($featherShape,"rightBarbuleLengthScale",($l++),$interP);
+			
+			$ri=`getAttr -mi ($featherShape+".leftBarbuleLengthScale")`;
+			for($interP in $RRamp)	
+					setRampWithVector($featherShape,"leftBarbuleLengthScale",($l++),$interP);
+}
+
+//--------------------------------------------
+
+//--------------------------------------------------create multi jcFeatherComponent
+//------------------------------------------------------------------------------------
+global proc int[] anylizeComponentIDs()
+{
+	int $result[];
+	$result[0]=`intFieldGrp -q -value1 shellNumField`;
+	$result[1]=`intFieldGrp -q -value1 shellVerticesNum`;
+	$result[2]=`intFieldGrp -q -value1 stepInShellField`; 
+	$result[3]=`intFieldGrp -q -value1 groupNumInShell`; 		
+	if($result[0]<=0) $result[0]=100000000;
+	string $content =`textFieldGrp -q -tx vertexIDGroup`;
+	if($content =="") return {};
+	
+	$newContentArray = stringToStringArray($content," ");
+	for($str in $newContentArray)
+		$result[`size $result`] = (int)$str;
+	return 	$result;	
+}
+//select vertices following the rule
+global proc doSelectVertexID(int $select)
+{
+	string $sel[]=`ls -sl`;
+	int $ids[]=anylizeComponentIDs();
+	int $sizeIds=`size $ids`;
+	int $idnum;
+	string $vtxComps=`textFieldGrp -q -tx jcFeaComponentNameField`;	
+	select -cl;
+	string $allVertices[];
+	for($s in $sel)
+	{
+		int $totalNumID[]=`polyEvaluate -v $s`;
+		int $shellIndex=0;
+		int $end=0;		
+		for(;$shellIndex<$ids[0];$shellIndex++)
+		{
+			string $tempIds[];
+			int $k=0;
+			for(;$k<$ids[3];$k++)//-----how many curves in one shell
+			{
+				clear $tempIds;
+				int $i=4;
+				for(;$i<$sizeIds;$i++)
+				{
+					$idnum=$ids[$i] + $shellIndex * $ids[1] + $k*$ids[2];					
+					if( $idnum>=$totalNumID[0]||$idnum<0 )
+					{
+						clear $tempIds;
+						$end =1;
+						break;
+					}
+					$tempIds[`size $tempIds`]=($s+".vtx["+$idnum+"]");
+				}
+				if($end) break;
+				if(!$select)
+				{
+					if(`size $tempIds`>0)
+					{
+						select -cl;
+						select -r $tempIds;
+						sets -name ($vtxComps+"#");
+					}
+				}
+				else
+					$allVertices = stringArrayCatenate($allVertices,$tempIds);
+			}
+			if($end) break;
+		}	
+	}
+	
+	if($select) select -r $allVertices;
+}
+//create jcFeatherComponent for each set of vertices
+global proc doCreateComponent()
+{
+	string $vtxComps=`textFieldGrp -q -tx jcFeaComponentNameField`;	
+	string $sel[]=`ls -sl`;
+	int $ids[]=anylizeComponentIDs();
+	int $sizeIds=`size $ids`;
+	int $idnum;
+	string $allCurves[];
+	for($s in $sel)
+	{
+		int $totalNumID[]=`polyEvaluate -v $s`;
+		int $shellIndex=0;
+		int $end=0;
+		for(;$shellIndex<$ids[0];$shellIndex++)
+		{
+			
+			string $tempIds[];
+			int $k=0;
+			for(;$k<$ids[3];$k++)//-----how many curves in one shell
+			{
+				int $i=4;
+				clear $tempIds;
+				for(;$i<$sizeIds;$i++)
+				{
+					$idnum=$ids[$i] + $shellIndex * $ids[1] + $k*$ids[2];					
+					if( $idnum>=$totalNumID[0] || $idnum<0 )
+					{
+						clear $tempIds;
+						$end =1;
+						break;
+					}
+					$tempIds[`size $tempIds`]=($s+".vtx["+$idnum+"]");
+				}
+				if($end) break;
+				select -cl;
+				select -r $tempIds;
+				string $comName = jcCreateJCFeatherComponent();
+				rename $comName ($vtxComps+"#");
+			}
+			if($end) break;
+		}	
+	}
+}
+global proc string[] getIDsFromVertices()
+{
+	string $sel[]=`ls -fl -l -sl`;
+	string $buffer[];
+	string $result="";
+	string $shape="";
+ 	for($sv in $sel)
+ 	{
+		int $arrays=`tokenize $sv "." $buffer`;
+		
+ 		if($arrays==2 && startsWith($buffer[1],"vtx")) 
+		{
+			$shape = $buffer[0];
+			string $secStr=` match "[0-9]+" $buffer[1]`;
+			$result += $secStr;
+			$result += " ";
+		}
+	}
+	string $shapeID[2];
+	$shapeID[0] = $shape;
+	$shapeID[1] = $result;
+		
+	return $shapeID;
+}
+global proc doSetVertexComGroup()
+{
+	string $meshIds[] = getIDsFromVertices();
+	textFieldGrp -e -tx $meshIds[1] vertexIDGroup;
+	}
+global proc createMultiJCFeatherComponent()
+{
+	if(`window -ex multiComponent`)
+         deleteUI -window multiComponent;
+	window -title "Create jcFeatherComponent"
+ 		-iconName "Com" -s 0
+ 		-widthHeight 300 210 multiComponent;
+ 	 columnLayout -adjustableColumn true;
+ 	 separator -height 10 ; 
+ 	 
+	 intFieldGrp -numberOfFields 1 -en 1 -label "Shell Num" -value1 -1 shellNumField;	 	 
+ 	 intFieldGrp -numberOfFields 1 -en 1 -label "Shell Vertices Num" -value1 1 shellVerticesNum; 	 
+ 	 intFieldGrp -numberOfFields 1 -en 1 -label "Step In Shell" -value1 1 stepInShellField;
+	 intFieldGrp -numberOfFields 1 -en 1 -label "Group Per Shell" -value1 3 groupNumInShell;
+	 
+     textFieldGrp -adj 1 -label "Vertex Group" -ed true -tx "" vertexIDGroup;
+     textFieldGrp -adj 1 -label "Component Name" -ed true -tx "jcFeatherComponent" jcFeaComponentNameField;   
+     
+     button -label "Clear Vertex Group" -command "textFieldGrp -e -tx \"\" vertexIDGroup";
+     button -label "Set Vertex Group" -command "doSetVertexComGroup"; 
+     button -label "Select Vertices" -command "doSelectVertexID(1)"; 
+     
+     separator -height 10 ; 
+     button -label "Create Vertices Set" -command "doSelectVertexID(0)"; 
+     button -label "Create Component" -command "doCreateComponent";       
+     
+	 showWindow multiComponent;   
+}
+//------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------
+
+
+global proc int getNextGuidSurfaceIndex( string $attr, int $start )
+{
+	// We find the next unconnected multi index starting at
+	// the passed in index.
+	int $i;string $con;
+	// assume a max of 10 million connections
+	for( $i = $start; $i < 10000000; $i++ ){
+		
+		$con = `connectionInfo -sfd ($attr + "["+$i+"].guidSurface")`;
+		if( $con == ""){
+			return( $i );
+		}
+	}
+	return(0);
+}
+global proc int getNexPreControllerHue(string $attr, int $start )
+{
+	// We find the next unconnected multi index starting at
+	// the passed in index.
+	int $i;string $con;
+	// assume a max of 10 million connections
+	for( $i = $start; $i < 10000000; $i++ ){
+		
+		$con = `connectionInfo -sfd ($attr + "["+$i+"].controlWeightMap")`;
+		if( $con == ""){
+			return( $i );
+		}
+	}
+	return(0);
+	}
+//change num to string####£¬Èç 4 -> 0004
+global proc string frameToName(int $frame,int $pad)
+{
+	string $newFrame = (string)abs($frame);
+	int $bytes = sizeBytes($newFrame);
+	string $result="";
+	int $i=1;
+	for(;$i<=($pad-$bytes);$i++)
+		$result +="0";
+	$result +=$newFrame;
+	if($frame<0) $result="-"+$result;
+	return $result;
+	}
+
+//add featherU featherV attributes to $obj
+ global proc string addFeatherUVAttrs(string $obj)
+{
+	if(`nodeType $obj`!="transform")
+	{
+		string $rela[]=`listRelatives -p -f $obj`;
+		$obj = $rela[0];
+		}
+	if(!`attributeExists "featherU" $obj`)
+	{
+		addAttr -ln "featherU"  -at double -min 0 -max 1 -dv 0 $obj;
+		setAttr -e -keyable true ($obj+".featherU");
+	}
+	if(!`attributeExists "featherV" $obj`)
+	{
+		addAttr -ln "featherV"  -at double -min 0 -max 1 -dv 0 $obj;
+		setAttr -e -keyable true ($obj+".featherV");
+	}
+	return $obj;	
+}
+global proc string[] getIDsFromVertices()
+{
+	string $sel[]=`ls -fl -l -sl`;
+	string $buffer[];
+	string $result="";
+	string $shape="";
+ 	for($sv in $sel)
+ 	{
+		int $arrays=`tokenize $sv "." $buffer`;
+		
+ 		if($arrays==2 && startsWith($buffer[1],"vtx")) 
+		{
+			$shape = $buffer[0];
+			string $secStr=` match "[0-9]+" $buffer[1]`;
+			$result += $secStr;
+			$result += " ";
+		}
+	}
+	string $shapeID[2];
+	$shapeID[0] = $shape;
+	$shapeID[1] = $result;
+		
+	return $shapeID;
+}
+
+//create surface feather
+global proc jcCreateFeather()
+{			
+ 		string $sel[]=`ls -l -sl`;
+ 		int $selSize = `size $sel`;
+ 		
+ 		string $buffer[];
+		int $arrays=`tokenize $sel[0] "." $buffer`;
+		if($arrays>=2)
+			return ;
+			
+		string $outFeather[]=jcCreateSingleJCFeather();
+		$featherShape = $outFeather[1];
+		
+		string $attr = ($featherShape+".guidSurfaceInfo");
+		for($node in $sel)
+		{
+			string $shape=jcGetTransformShape($node,"nurbsSurface");
+			if($shape=="") continue;
+			
+			string $transNode = addFeatherUVAttrs($node);			
+			$surfaceSize = getNextGuidSurfaceIndex($attr, 0);
+			connectAttr ($shape+".worldSpace") ($featherShape+".guidSurfaceInfo["+$surfaceSize+"].guidSurface");
+			connectAttr ($transNode+".featherU") ($featherShape+".guidSurfaceInfo["+$surfaceSize+"].guidUV0");
+			connectAttr ($transNode+".featherV") ($featherShape+".guidSurfaceInfo["+$surfaceSize+"].guidUV1");			
+		}
+		
+		select -r $outFeather[0];
+	}
+//-----------------------------------------------------component
+//-----------------------------------------------------
+//-----------------------------------------------------
+//-----------------------------------------------------
+	
+//select jcFeatherComponent nodes and then do it.
+global proc jcCreateComponentFeather()
+{
+		string $sel[]=`ls -l -sl`;
+		if(`size $sel`==0) error "jcFeather: Select jcFeatherComponent to create jcFeather.";
+		
+		string $outFeather[]=jcCreateSingleJCFeather();
+		$featherShape = $outFeather[1];		
+		select -cl;
+		select -r $sel;
+		jcAddComponentFeather($featherShape);
+}
+global proc string jcCreateJCFeatherComponent()
+{
+		string $shape_vid[]=getIDsFromVertices();
+		if($shape_vid[0]=="") return "";
+		string $compTransform = `createNode "transform" -n "jcFeatherComponent#" `;
+		string $compShape = `createNode "jcFeatherComponent" -n "jcFeatherComponentShape#" -p $compTransform `;
+		
+		connectAttr ($shape_vid[0]+".worldMesh") ($compShape+".inMesh");
+		setAttr -type "string" ($compShape+".vertexGroup") $shape_vid[1];
+
+		return $compTransform;
+	}
+global proc string jcCreateJCFeatherStandardCom(string $mesh,string $mid,string $left,string $right)
+{
+		if($mid=="") return "";
+		string $compTransform = `createNode "transform" -n "jcFeatherComponent#" `;
+		string $compShape = `createNode "jcFeatherComponent" -n "jcFeatherComponentShape#" -p $compTransform `;
+		
+		connectAttr ($mesh+".worldMesh") ($compShape+".inMesh");
+		setAttr -type "string" ($compShape+".vertexGroup") $mid;
+		if($left!=""&&$right!="")
+		{
+			setAttr ($compShape+".exMeshFeather") 1;
+			setAttr -type "string" ($compShape+".leftVertexGroup") $left;
+			setAttr -type "string" ($compShape+".rightVertexGroup") $right;
+		}
+	
+		return $compTransform;
+	}
+
+//-----------------------------------------------------component array
+//-----------------------------------------------------
+//-----------------------------------------------------
+//-----------------------------------------------------
+global proc string jcCreateStandardComArray()
+{
+	string $sel[]=`ls -sl`;
+	string $meshShape=jcGetTransformShape($sel[0],"mesh");
+	if($meshShape=="") error "Select a standard jcFeather template mesh.";
+	
+	string $compTransform =jcCreateJCFeatherStandardComArray($meshShape,"5:8","9:12 4","0:4");
+	if($compTransform=="") error "jcFeather : error occured in getting mesh vertices.";
+	return $compTransform;
+	}
+global proc string jcCreateJCFeatherStandardComArray(string $mesh,string $mid,string $left,string $right)
+{
+		if($mid=="") return "";
+		string $compTransform = `createNode "transform" -n "jcFeaComArray#" `;
+		string $compShape = `createNode "jcFeatherComponentArray" -n "jcFeaComArrayShape#" -p $compTransform `;	
+		select -r $mesh;
+		jcAddMeshesToComArray($compShape);
+		setAttr -type "string" ($compShape+".vertexGroup") $mid;
+		setAttr ($compShape+".walkStep") 13;
+		if($left!=""&&$right!="")
+		{
+			setAttr ($compShape+".exMeshFeather") 1;
+			setAttr -type "string" ($compShape+".leftVertexGroup") $left;
+			setAttr -type "string" ($compShape+".rightVertexGroup") $right;
+		}		
+		return $compTransform;
+	}	
+global proc jcAddMeshesToComArray(string $comArrayShape)
+{
+	string $sel[]=`ls -sl`;
+	if(`size $sel`==0) error "jcFeather: Select meshes to add to jcComponentArray.";
+	for($s in $sel)
+	{
+			string $ms = jcGetTransformShape($s,"mesh");
+			if($ms=="") continue;
+
+			string $attr = ($comArrayShape+".inMesh");
+			int $inms = getNextFreeMultiIndex($attr, 0);
+			connectAttr ($s+".worldMesh") ($comArrayShape+".inMesh["+$inms+"]");
+	}
+	select -r $comArrayShape;
+}
+global proc string jcCreateComponentArray()
+{
+		string $sel[]=`ls -sl`;
+		if(`size $sel`==0) error "jcFeather: Select meshes to create jcFeatherComponentArray.";
+		
+		string $compTransform = `createNode "transform" -n "jcFeaComArray#" `;
+		string $compShape = `createNode "jcFeatherComponentArray" -n "jcFeaComArrayShape#" -p $compTransform `;	
+		select -r $sel;
+		jcAddMeshesToComArray($compShape);
+		return $compShape;
+	}
+	
+global proc jcCreateComponentArrayFea()
+{
+	string $sel[]=`ls -sl`;
+	if(`size $sel`==0) error "jcFeather: Select jcFeatherComponentArray or jcPreFeather node to create jcFeather.";
+	string $feather[]= jcCreateSingleJCFeather();
+	
+// 	string $featherShape = $feather[1];
+// 	setAttr ($featherShape+".barbuleLength") 1.5;
+// 	removeMultiInstance -break true ($featherShape+".leftBarbuleLengthScale[2]");
+// 	setAttr ($featherShape+".leftBarbuleLengthScale[1].leftBarbuleLengthScale_Position") 0.13;
+// 	setAttr ($featherShape+".leftBarbuleLengthScale[1].leftBarbuleLengthScale_FloatValue") 1;
+	
+	select -r $sel;
+	jcAddComponentArrayFeather($feather[1]);
+}
+global proc jcAddComponentArrayFeather(string $featherShape)
+{
+	string $sel[]=`ls -sl`;
+	if(`size $sel`==0) error "jcFeather: Select jcFeatherComponentArray or jcPreFeather node to add to jcFeather.";
+	
+	for($s in $sel)
+	{
+			string $ms = jcGetTransformShape($s,"jcFeatherComponentArray");
+			string $preFea=jcGetTransformShape($s,"jcPreFeather");
+			
+			string $attr = ($featherShape+".inFeatherTurtleArrayData");
+			int $inTurtleSize = getNextFreeMultiIndex($attr, 0);		
+			if($ms!="") 
+			  connectAttr -f ($ms+".outFeatherTurtleDataArray") ($featherShape+".inFeatherTurtleArrayData["+$inTurtleSize+"]");
+			if($preFea!="")
+			 connectAttr -f ($preFea+".outFeatherTurtleDataArray") ($featherShape+".inFeatherTurtleArrayData["+$inTurtleSize+"]");
+			
+	}
+}
+global proc jcAddGrowMesh2ComponentArray(string $comArrayNode)
+{
+	string $sel[]=`ls -sl`;
+	if(`size $sel`==0) error "jcFeather: Select poly mesh to add to jcFeatherComponentArray.";
+	
+	for($s in $sel)
+	{
+		string $ms = jcGetTransformShape($s,"mesh");
+		connectAttr -f ($s+".worldMesh") ($comArrayNode+".inGrowMesh");
+	}
+}
+//-----------------------------------------------------
+//-----------------------------------------------------
+//-----------------------------------------------------
+//-----------------------------------------------------component array
+
+
+
+//-----------------------------------------------------pre features
+//-----------------------------------------------------
+//-----------------------------------------------------
+//-----------------------------------------------------
+global proc jcCreatePreFeather()
+{
+	string $sel[]=`ls -sl`;
+	if(`size $sel`==0) error "jcFeather : Select mesh to create jcPreFeather.";
+	string $transformN=`createNode transform -n "jcPreFeather#"`;
+	string $jcPreFeaNode=`createNode jcPreFeather -p $transformN -n  "jcPreFeatherShape#"`;
+	select -r $sel;
+	jcUpdatePreFeaGrowMesh($jcPreFeaNode,0);
+	}
+global proc jcUpdataPreInstance(string $preFea)
+{
+	string $sel[]=`ls -sl`;
+	if(`size $sel`==0) error "jcFeather: Select a mesh.";
+	string $ms = jcGetTransformShape( $sel[0],"mesh");
+	if($ms=="") error "jcFeather: Select a mesh.";
+	connectAttr -f ($ms+".worldMesh") ($preFea+".instanceMesh");
+	}
+global proc jcUpdatePreComponent(string $preFea)
+{
+	string $sel[]=`ls -sl`;
+	if(`size $sel`==0) error "jcFeather: Select a jcFeatherComponent.";
+	string $ms = jcGetTransformShape( $sel[0],"jcFeatherComponent");
+	if($ms=="") error "jcFeather: Select a jcFeatherComponent.";
+	connectAttr -f ($ms+".outFeatherTurtleData") ($preFea+".instanceFeatherTurtle");
+	}	
+global proc jcUpdataPrePGuid(string $preFea)
+{
+	string $sel[]=`ls -sl`;
+	if(`size $sel`==0) error "jcFeather: Select a jcPreGuide.";
+	string $ms = jcGetTransformShape( $sel[0],"jcPreGuide");
+	if($ms=="") error "jcFeather: Select a jcPreGuide.";
+	connectAttr -f ($ms+".outVertexDir") ($preFea+".inVertexDir");
+	}
+global proc jcUpdataPreScatter(string $preFea)
+{
+	string $sel[]=`ls -sl`;
+	if(`size $sel`==0) error "jcFeather: Select a jcScatter node.";
+	string $ms = jcGetTransformShape( $sel[0],"jcScatter");
+	if($ms=="") error "jcFeather: Select a jcScatter node.";
+	connectAttr -f ($ms+".outGrowData") ($preFea+".inScatterData");
+	}
+	
+global proc string disconnectPreGrowMesh(string $preFeaNode)
+{
+	string $inCo[]=`listConnections -c 1 -p 1 -s 1 -d 0 ($preFeaNode+".inGrowMesh")`;
+	if(`size $inCo`==2)
+		disconnectAttr $inCo[1] $inCo[0];
+	$inCo=`listConnections -c 1 -p 1 -s 1 -d 0 ($preFeaNode+".paintRoll")`;
+	if(`size $inCo`==2)
+		disconnectAttr $inCo[1] $inCo[0];
+		
+	$inCo=`listConnections -c 1 -p 1 -s 1 -d 0 ($preFeaNode+".paintYaw")`;
+	if(`size $inCo`==2)
+		disconnectAttr $inCo[1] $inCo[0];	
+		
+	$inCo=`listConnections -c 1 -p 1 -s 1 -d 0 ($preFeaNode+".paintPitch")`;
+	if(`size $inCo`==2)
+		disconnectAttr $inCo[1] $inCo[0];	
+		
+		
+	$inCo=`listConnections -c 1 -p 1 -s 1 -d 0 ($preFeaNode+".paintLength")`;
+	if(`size $inCo`==2)
+		disconnectAttr $inCo[1] $inCo[0];
+		
+	$inCo=`listConnections -c 1 -p 1 -s 1 -d 0 ($preFeaNode+".paintThick")`;
+	if(`size $inCo`==2)
+		disconnectAttr $inCo[1] $inCo[0];	
+		
+	$inCo=`listConnections -c 1 -p 1 -s 1 -d 0 ($preFeaNode+".paintWidth")`;
+	if(`size $inCo`==2)
+		disconnectAttr $inCo[1] $inCo[0];
+		
+	$inCo=`listConnections -c 1 -p 1 -s 1 -d 0 ($preFeaNode+".paintBendCurvature")`;
+	if(`size $inCo`==2)
+		disconnectAttr $inCo[1] $inCo[0];	
+		
+	if(`size $inCo`==2)
+	{
+		string $res[]=stringToStringArray( $inCo[1],".");
+		return plugNodeStripped( $res[0]);					
+	}
+	else
+		return "";
+}	
+global proc transferPreFeatherPaintData(string $mesh0, string $mesh1)
+{
+	float $paintData[];
+	int $dataSize=0;
+	int $verSize[]=`polyEvaluate -v $mesh1`;
+	string $meshAttrs[]={"jcFeatherRoll","jcFeatherYaw","jcFeatherPitch","jcFeatherLength","jcFeatherThick","jcFeatherWidth","jcFeatherBend"};
+	
+	for($attr in $meshAttrs)
+	{
+		string $cmd="setAttr -type doubleArray ";
+		
+		$paintData=`getAttr ($mesh0+"."+$attr)`;
+		$dataSize=`size $paintData`;
+		$cmd += ($mesh1+"."+$attr+" ");
+		$cmd += $verSize[0];
+		
+		if($dataSize<=$verSize[0])
+		{
+			for($d in $paintData)
+			{
+				$cmd+=" ";
+				$cmd+=$d;
+			}			
+			int $i=$dataSize;
+			for(;$i<$verSize[0];$i++)
+			{
+				$cmd+=" ";
+				if($attr=="jcFeatherRoll"||$attr=="jcFeatherYaw"||$attr=="jcFeatherPitch"||$attr=="jcFeatherBend")
+					$cmd+=0;
+				else
+					$cmd+=1;
+			}
+		}
+		else
+		{
+			int $i=0;
+			for(;$i<$verSize[0];++$i)
+			{
+				$cmd+=" ";
+				$cmd+=$paintData[$i];
+			}	
+		}
+		eval($cmd);
+	}
+}	
+
+global proc jcUpdatePreFeaGrowMesh(string $preFea,int $copyOldPaintData)
+{
+	string $sel[]=`ls -sl`;
+	if(`size $sel`==0) return;	
+	string $meshNode="";
+	string $name_face[] = stringToStringArray($sel[0],".");
+	if(`size $name_face`!=0)
+	{
+		string $shapeN=jcGetTransformShape($name_face[0],"mesh");
+		if($shapeN!="")
+			$meshNode=$name_face[0];
+	}
+	else
+		return;
+		
+	string $oldMesh = disconnectPreGrowMesh($preFea);
+	
+	connectAttr ($meshNode+".worldMesh") ($preFea+".inGrowMesh");
+	initFeatherPaintAtCreate(jcGetTransformShape($meshNode,"mesh"),$preFea);
+	if($copyOldPaintData)
+		transferPreFeatherPaintData($oldMesh,jcGetTransformShape($meshNode,"mesh"));
+		
+	string $outCon[]=`listConnections -type "mesh" -d 1 ($preFea+".outFeatherMesh")`;
+	if(`size $outCon`==0)
+	{
+		string $meshT=`createNode transform -n "preFeatherOutMesh#"`;
+		string $meshSh=`createNode mesh -n "preFeatherOutMeshShape#" -p $meshT`;
+		connectAttr ($preFea+".outFeatherMesh") ($meshSh+".inMesh") ;
+		select -r $meshT;
+		sets -e -forceElement initialShadingGroup;
+	}
+		
+	select -r $preFea;
+	}
+	
+global proc string[] jcCreatePreController()
+{
+	string $re[];
+	$re[0]=`createNode transform -n "jcPreController#" `;
+	$re[1]=`createNode jcPreController -n "jcPreControllerShape#" -p $re[0]`;
+	select -r $re[0];
+	return $re;
+	}
+global proc addcontrollerToPreFeather(string $preFeather)
+{
+	string $sel[]=`ls -sl`;
+	for($s in $sel)
+	{
+		string $ms = jcGetTransformShape($s,"jcPreController");
+		if($ms=="")continue;
+		string $cos[]=`listConnections -d 1 -sh 1 -type "jcPreFeather" ($ms+".controllerColorHue")`;
+		if(`size $cos`!=0) 
+		{
+			warning ("JCFeather : "+$ms+" is already connected to "+$preFeather);
+			continue;
+		}
+		string $attr = ($preFeather+".controlInfo");
+		int $conSize = getNexPreControllerHue($attr, 0);
+		connectAttr -f ($s+".rotate") ($preFeather+".controlInfo["+$conSize+"].controlRotate");
+		connectAttr -f ($s+".scale") ($preFeather+".controlInfo["+$conSize+"].controlScale");
+		connectAttr -f ($s+".bendCurvature") ($preFeather+".controlInfo["+$conSize+"].controlBend");		
+		connectAttr -f ($s+".outMapName") ($preFeather+".controlInfo["+$conSize+"].controlWeightMap");				
+	}
+}
+
+global proc removecontrollerFromPreFeather(string $preFeather)
+{
+	string $sel[]=`ls -sl`;
+	for($s in $sel)
+	{
+		string $ms = jcGetTransformShape($s,"jcPreController");
+		if($ms=="")continue;
+		
+		string $cos[]=`listConnections -p 1 -c 1 -d 1 -sh 1 -type "jcPreFeather"  $ms`;
+		int $sizeCon=`size $cos`;
+		if($sizeCon==0) continue;
+		
+		int $i=0;
+		for(;$i<$sizeCon;$i+=2)
+		{
+			string $PreFea[]=stringToStringArray($cos[$i+1],".");
+			if( plugNodeStripped($PreFea[0]) == $preFeather)
+				disconnectAttr $cos[$i] $cos[$i+1];
+		}
+		
+			
+		clear $cos;
+		$cos=`listConnections -p 1 -c 1 -d 1 -type "jcPreFeather"  $s`;		
+		$sizeCon=`size $cos`;
+		for($i=0;$i<$sizeCon;$i+=2)
+		{
+			string $PreFea[]=stringToStringArray($cos[$i+1],".");
+			if( plugNodeStripped($PreFea[0]) == $preFeather)
+				disconnectAttr $cos[$i] $cos[$i+1];
+		}			
+	}
+}
+//-----------------------------------------------------
+//-----------------------------------------------------
+//-----------------------------------------------------
+//-----------------------------------------------------	pre features
+
+global proc jcCreateMeshStandardFeather()
+{
+	string $sel[]=`ls -sl`;
+	string $meshShape=jcGetTransformShape($sel[0],"mesh");
+	if($meshShape=="") error "Select a standard jcFeather template mesh.";
+	
+	string $compTransform =jcCreateJCFeatherStandardCom($meshShape,"5:8","9:12 4","0:4");
+	if($compTransform=="") error "jcFeather : error occured in getting mesh vertices.";
+	
+	string $outFeather[]=jcCreateSingleJCFeather();
+	$featherShape = $outFeather[1];
+	setAttr ($featherShape+".barbuleLength") 1.5;
+	removeMultiInstance -break true ($featherShape+".leftBarbuleLengthScale[2]");
+	setAttr ($featherShape+".leftBarbuleLengthScale[1].leftBarbuleLengthScale_Position") 0.13;
+	setAttr ($featherShape+".leftBarbuleLengthScale[1].leftBarbuleLengthScale_FloatValue") 1;
+	
+	setAttr ($featherShape+".keyBarbuleStartAngle1") 0;	
+	setAttr ($featherShape+".keyBarbuleStartAngle2") 0;	
+	setAttr ($featherShape+".keyBarbuleStartAngle3") 0;	
+	setAttr ($featherShape+".keyBarbuleStartAngle4") 0;		
+	
+	select -r $compTransform;
+	jcAddComponentFeather($featherShape);
+	select -r $featherShape;		
+}
+//------------------------------------------------------create meshvertex feather
+global proc jcCreateMeshVertexFeather()
+{			
+		string $compTransform =jcCreateJCFeatherComponent();
+		if($compTransform=="") error "jcFeather : error occured in getting mesh vertices.";
+		
+		string $outFeather[]=jcCreateSingleJCFeather();
+		$featherShape = $outFeather[1];
+	
+		select -r $compTransform;
+		jcAddComponentFeather($featherShape);
+		select -r $featherShape;
+	}
+	
+//-----------------------------------------------------add surface feather
+global proc jcAddFeather(string $featherShape)
+{			
+ 		string $sel[]=`ls -sl`;
+ 		int $selSize = `size $sel`;
+ 		
+ 		int $ii=0;
+ 		for($node in $sel)
+		{
+			string $nodeShape = jcGetTransformShape($node,"nurbsSurface");		
+			if($nodeShape!="")
+			{
+					$ii++;
+					break;
+			}		
+		}
+		
+		if($ii==0) error "select a nurbsSurface.";
+		
+
+		string $attr = ($featherShape+".guidSurfaceInfo");
+		for($node in $sel)
+		{
+			string $nodeShape = jcGetTransformShape($node,"nurbsSurface");		
+			if($nodeShape=="")
+					continue;
+					
+			string $transNode =addFeatherUVAttrs($node);
+					
+			int $needConnect=1;
+			string $connects[]=`listConnections -sh 1 -d 1 -p 0 -t jcFeather ($nodeShape+".worldSpace")`;
+			if(`size $connects`!=0)
+			{
+				for($c in $connects) 
+					if(gmatch($featherShape,$c))
+					{
+						$needConnect=0;
+						break;
+					}
+			}
+			if($needConnect)
+			{
+				$surfaceSize = getNextGuidSurfaceIndex($attr, 0);
+				connectAttr ($nodeShape+".worldSpace") ($featherShape+".guidSurfaceInfo["+$surfaceSize+"].guidSurface");
+				connectAttr ($transNode+".featherU") ($featherShape+".guidSurfaceInfo["+$surfaceSize+"].guidUV0");
+				connectAttr ($transNode+".featherV") ($featherShape+".guidSurfaceInfo["+$surfaceSize+"].guidUV1");
+			}
+			else
+				warning ($nodeShape+" is already connected to "+$featherShape);
+		}
+		select -cl;
+	}
+	
+//add mesh vertex feather
+global proc jcAddMeshVertexFeather(string $featherShape)
+{			
+		string $compTransform =jcCreateJCFeatherComponent();
+		if($compTransform=="") error "jcFeather : error occured in getting mesh vertices.";
+				
+		select -r $compTransform;
+		jcAddComponentFeather($featherShape);
+}
+global proc jcAddStandardMeshFeather(string $featherShape)
+{
+	string $sel[]=`ls -sl`;
+	string $meshShape=jcGetTransformShape($sel[0],"mesh");
+	if($meshShape=="") error "Select a standard jcFeather template mesh.";
+	
+	string $compTransform =jcCreateJCFeatherStandardCom($meshShape,"5:8","9:12 4","0:4");
+	if($compTransform=="") error "jcFeather : error occured in getting mesh vertices.";
+	
+	select -r $compTransform;
+	jcAddComponentFeather($featherShape);
+	select -r $featherShape;
+	}
+	
+//--------------------------------------------add component feather
+global proc jcAddComponentFeather(string $featherShape)
+{
+	string $sel[]=`ls -l -sl`;
+	for($comp in $sel)
+	{ 	
+		string $realComp = jcGetTransformShape($comp,"jcFeatherComponent");
+		if($realComp=="") continue;
+		
+		string $cons[]=`listConnections -d 1 -sh 1 ($realComp+".outFeatherTurtleData")`;
+		if(stringArrayContains(plugNodeStripped($featherShape),$cons))
+		{
+			warning ("JCFeather : "+$realComp+"is already connected to "+$featherShape);
+			continue;
+		}
+				
+		$attr = ($featherShape+".inFeatherTurtleData");
+		$inTurtleSize = getNextFreeMultiIndex($attr, 0);
+		connectAttr ($realComp+".outFeatherTurtleData") ($featherShape+".inFeatherTurtleData["+$inTurtleSize+"]");
+	}
+}
+
+//------------------------------------------------------------------------create featherSystem
+global proc jcCreateFeatherSystem()
+{			
+ 		string $sel[]=`ls -l -sl`;
+ 		int $selSize = `size $sel`;
+ 		
+		if( $selSize==0 ) error "jcFeather: select a nurbsSurface or mesh";
+		
+		string $buffer[];
+		int $arrays=`tokenize $sel[0] "." $buffer`;
+		
+		string $node=$sel[0];
+		if($arrays==2) 
+		{
+			$node = $buffer[0];
+			if(!startsWith($buffer[1],"f["))	
+				error "jcFeather: select a nurbsSurface or mesh or mesh faces";		
+		}
+ 		string $featherSet=`sets -name "jcFeather_growth#"`;			
+		string $nodeShape[] = `listRelatives -f -s $node`;
+		if(`size $nodeShape`==0) return;
+		if(`nodeType $nodeShape[0]`!="nurbsSurface"&&`nodeType $nodeShape[0]`!="mesh")	
+			error "jcFeather: select a nurbsSurface or mesh or mesh faces";	
+	
+		string $featherSysTransform = `createNode "transform" -n "jcFeatherSystem#" `;
+		string $sysShape = `createNode "jcFeatherSystem" -n "jcFeatherSystemShape#" -p $featherSysTransform `;
+	    if(!`objExists jcFeatherDisplayGroup`) createNode "transform" -n "jcFeatherDisplayGroup";
+	    
+	    connectAttr ($featherSet+".message") ($sysShape+".growthSet");
+		string $setConnectAttrs[]=`listConnections -c 1 -d 0 -p 1 ($featherSet+".dagSetMembers")`;
+		if(`size $setConnectAttrs`==2&&$arrays==2)
+			connectAttr ($setConnectAttrs[1]+".objectGroupId") ($sysShape+".inputGrowMeshID");
+		
+			if(`nodeType $nodeShape[0]`=="nurbsSurface")
+			{
+				connectAttr ($nodeShape[0]+".worldSpace") ($sysShape+".inputGrowSurface");
+			}
+			else if (`nodeType $nodeShape[0]`=="mesh")
+			{
+				connectAttr ($nodeShape[0]+".worldMesh") ($sysShape+".inputGrowMesh");
+				string $currentUVSet = `getAttr ($nodeShape[0]+".currentUVSet")`;	
+				setAttr -type "string" ($sysShape+".uvSetName") $currentUVSet;		
+			}
+			string $featherMeshTransform = `createNode "transform" -n "jcFeatherSystemDiplay#" -p "jcFeatherDisplayGroup"`;
+	    	string $displayMesh = `createNode "mesh" -n "jcFeatherSystemDiplayShape#" -p $featherMeshTransform `;
+	    	setAttr ($displayMesh+".template") 1;
+			connectAttr ($sysShape+".outFeatherMesh") ($displayMesh+".inMesh");
+			
+		select -r $featherSysTransform;
+}
+
+//-----------------------------------------------------add feather to featherSystem
+global proc jcAddToFeatherSystem(string $sysShape)
+{			
+ 		string $sel[]=`ls -sl`;
+ 		int $selSize = `size $sel`;
+ 		
+		if( $selSize==0 ) error "jcFeather: select a jcFeather node.";
+		
+		string $attr = ($sysShape+".inRenderFeather");	    
+		for($node in $sel)
+		{
+			string $nodeShape[] = `listRelatives -s $node`;
+			if( `size $nodeShape`==0 ) continue;
+			if( `nodeType $nodeShape[0]`== "jcFeather" )
+			{
+				connectAttr ($nodeShape[0]+".featherInfoID") ($sysShape+".inRenderFeather");
+				connectAttr ($nodeShape[0]+".outputMesh") ($sysShape+".inFeatherMesh");				
+			}
+
+	   	}
+}
+global proc jcDisConnectAttr(string $source,string $dest)
+{
+	string $attr=`connectionInfo -sfd $dest`;
+	string $buffer[];
+	tokenize $attr "[" $buffer;//if the attribute is array type
+	if($source == $buffer[0])
+		disconnectAttr $source $dest;
+	}
+//------------------------------------------------------------------------remove feather
+global proc jcRemoveFeather(string $plug)
+{			
+ 		string $sel[]=`ls -sl`;
+ 		int $selSize = `size $sel`;
+ 		if($selSize==0) return;
+ 		string $featherShapes[];
+ 		
+ 		for($selNode in $sel)
+ 		{
+	 		string $comShape = jcGetTransformShape($selNode,"jcFeatherComponent");
+	 		string $comArrayShape = jcGetTransformShape($selNode,"jcFeatherComponentArray");
+	 		string $surfaceShape=jcGetTransformShape($selNode,"nurbsSurface");
+	 		string $preFeatherShape=jcGetTransformShape($selNode,"jcPreFeather");
+	 		
+	 		if($comShape!=""|| $comArrayShape!="" || $preFeatherShape!="")
+	 		{
+		 			string $finalShape="";
+		 			if($comShape!="")$finalShape=$comShape;
+		 			if($comArrayShape!="")$finalShape=$comArrayShape;
+		 			if($preFeatherShape!="")$finalShape=$preFeatherShape;
+		 			string $uvCo[]=`listConnections -c 1 -p 1 -sh 1 -d 1 -t jcFeather $finalShape`;
+					int $i=0;
+					for(;$i<`size $uvCo`;$i+=2)
+					{
+						if(startsWith($uvCo[$i+1],($plug+".")))
+								jcDisConnectAttr( $uvCo[$i] ,$uvCo[$i+1]); 
+					}
+		 	}
+		 	if($surfaceShape!="")
+		 	{
+			 	    string $uvCo[]=`listConnections -c 1 -p 1 -sh 1 -d 1 -t jcFeather $selNode`;
+					int $i=0;
+					for(;$i<`size $uvCo`;$i+=2)
+					{
+						if(startsWith($uvCo[$i+1],($plug+".")))
+								jcDisConnectAttr( $uvCo[$i] ,$uvCo[$i+1]); 
+					}	
+					$uvCo=`listConnections -c 1 -p 1 -sh 1 -d 1 -t jcFeather $surfaceShape`;
+					for($i=0;$i<`size $uvCo`;$i+=2)
+							if(startsWith($uvCo[$i+1],($plug+".")))
+								jcDisConnectAttr( $uvCo[$i] ,$uvCo[$i+1]);
+			 	
+			 }
+		}
+}
+//remove feathersystem
+global proc jcRemoveFromFeatherSystem(string $node)
+{			
+ 		string $sel[]=`ls -sl`;
+ 		int $selSize = `size $sel`;
+ 		if($selSize==0) return;
+		
+ 		for($sgNode in $sel)
+ 		{
+	 		string $shape=jcGetTransformShape($node,"jcFeather");
+			if($shape!="")
+			{
+		
+					jcDisConnectAttr( ($shape+".outputMesh ") ,($node+".inFeatherMesh") );
+					jcDisConnectAttr( ($shape+".featherInfoID"), ($node+".inRenderFeather") );
+			}
+		}
+
+}
+
+//---------------------------------------------------convert feather to mesh    return the name of the new mesh
+//----------------------------------
+//----------------------------------
+global proc string[] jcConvertFeather2Mesh()
+{
+		string $result[];
+	 	string $sel[]=`ls -l -sl`;
+ 		int $selSize = `size $sel`;
+ 		string $attr;
+ 		for($node in $sel)
+		{
+			string $nodeShape[] = `listRelatives -s $node`;
+			if(`nodeType $nodeShape[0]`=="jcFeather"||`nodeType $nodeShape[0]`=="jcFeatherSystem")
+			{
+				string $newGroup = `createNode transform -n "featherMesh#"`;
+				string $rachisMesh = `createNode mesh -p $newGroup -n "jcRachisShape#"`;
+				string $barbuleMesh = `createNode mesh -p $newGroup -n "jcBarbuleShape#"`;
+				
+				//---assign the default material
+				$attr="initialShadingGroup.dagSetMembers";
+				int $s = getNextFreeMultiIndex($attr, 0);
+				connectAttr ($rachisMesh+".instObjGroups[0]") ($attr+"["+$s+"]");
+				$s = getNextFreeMultiIndex($attr, 0);
+				connectAttr ($barbuleMesh+".instObjGroups[0]") ($attr+"["+$s+"]");
+				//-----
+								
+				connectAttr ($nodeShape[0]+".outRachisMesh") ($rachisMesh+".inMesh");
+				connectAttr ($nodeShape[0]+".outBarbuleMesh") ($barbuleMesh+".inMesh");	
+				setAttr ($nodeShape[0]+".outputFeatherMesh") 1;
+				
+				$result[`size $result`]	=	$rachisMesh;
+				$result[`size $result`]	=	$barbuleMesh;						
+			}	
+		}
+		select -cl;
+		return $result;
+}
+
+global proc updateInCurve_preGuid(string $guidNode)
+{
+	string $sel[]=`ls -sl`;
+	if(`size $sel`==0) return;	
+	
+	string $inCo[]=`listConnections -c 1 -p 1 -s 1 -d 0 ($guidNode+".inGuideCurves")`;
+	int $sc=`size $inCo`;
+	if($sc!=0)
+	{
+		int $i=0;
+		for(;$i<$sc-1;$i+=2)
+			disconnectAttr $inCo[$i+1] $inCo[$i];
+	}
+	for($s in $sel)
+	{
+		string $shapeN = jcGetTransformShape($s,"nurbsCurve");
+		if($shapeN != "")
+		{
+			string $attr = ($guidNode+".inGuideCurves");	
+			$attrS = getNextFreeMultiIndex($attr, 0);
+			connectAttr ($s+".worldSpace") ($guidNode+".inGuideCurves["+$attrS+"]");
+		}
+	}	
+}
+
+global proc updateInMesh_Scatter(string $scatterNode)
+{
+	string $sel[]=`ls -sl`;
+	if(`size $sel`==0) return;	
+	string $meshNode="";
+	string $name_face[] = stringToStringArray($sel[0],".");
+	string $shapeN;
+	if(`size $name_face`!=0)
+	{
+		$shapeN=jcGetTransformShape($name_face[0],"mesh");
+		if($shapeN!="")
+			$meshNode=$name_face[0];
+	}
+	else
+		return;
+		
+	string $inCo[]=`listConnections -c 1 -p 1 -s 1 -d 0 ($scatterNode+".inGrowMesh")`;
+	if(`size $inCo`==2)
+		disconnectAttr $inCo[1] $inCo[0];
+		
+	string $uvSet = `getAttr ($shapeN+".currentUVSet")`;
+	setAttr -type "string" ($scatterNode+".uvSetName") $uvSet;
+	
+	connectAttr ($meshNode+".worldMesh") ($scatterNode+".inGrowMesh");
+	string $faceComponent="";
+	int $i=0;
+	for($s in $sel)
+	{
+		string $name_face[] = stringToStringArray($s,".");
+		if(`size $name_face`==2)
+		{
+			$faceComponent+=$name_face[1];
+			$faceComponent+=" ";
+			$i++;
+		}
+	}
+	string $addComCmd="setAttr "+$scatterNode+".inComponentList -type componentList ";
+	$addComCmd += $i;
+	$addComCmd += " ";
+	$addComCmd += $faceComponent;
+	eval($addComCmd);
+}
+global proc updateInMesh_preGuid(string $guidNode)
+{
+	string $sel[]=`ls -sl`;
+	if(`size $sel`==0) return;	
+	string $meshNode="";
+	string $name_face[] = stringToStringArray($sel[0],".");
+	if(`size $name_face`!=0)
+	{
+		string $shapeN=jcGetTransformShape($name_face[0],"mesh");
+		if($shapeN!="")
+			$meshNode=$name_face[0];
+	}
+	else
+		return;
+		
+	string $inCo[]=`listConnections -c 1 -p 1 -s 1 -d 0 ($guidNode+".inGrowMesh")`;
+	if(`size $inCo`==2)
+		disconnectAttr $inCo[1] $inCo[0];
+
+	connectAttr ($meshNode+".worldMesh") ($guidNode+".inGrowMesh");
+	string $faceComponent="";
+	int $i=0;
+	for($s in $sel)
+	{
+		string $name_face[] = stringToStringArray($s,".");
+		if(`size $name_face`==2)
+		{
+			$faceComponent+=$name_face[1];
+			$faceComponent+=" ";
+			$i++;
+		}
+	}
+	string $addComCmd="setAttr "+$guidNode+".inComponentList -type componentList ";
+	$addComCmd += $i;
+	$addComCmd += " ";
+	$addComCmd += $faceComponent;
+	eval($addComCmd);
+}
+global proc jcCreatePreGuid()
+{
+	string $sel[]=`ls -sl`;
+	if(`size $sel`==0) error "jcFeather : Select mesh or mesh vertices to create jcPreGuide.";
+	string $transformN=`createNode transform -n "jcPreGuide#"`;
+	string $jcGuidNode=`createNode jcPreGuide -p $transformN -n  "jcPreGuideShape#"`;
+	select -r $sel;
+	updateInMesh_preGuid($jcGuidNode);
+}
+
+global proc jcCreateScatter()
+{
+	string $sel[]=`ls -sl`;
+	if(`size $sel`==0) error "jcFeather : Select mesh or mesh vertices to create jcScatter.";
+	string $transformN=`createNode transform -n "jcScatter#"`;
+	string $jcScaterNode=`createNode jcScatter -p $transformN -n  "jcScatterShape#"`;
+	select -r $sel;
+	updateInMesh_Scatter($jcScaterNode);
+}
+
+global proc string createNewColorLambert(string $obj)
+{
+	global string $paintWeightNamePrefix;
+	string $shader =$paintWeightNamePrefix+"_"+$obj+"_lambert";
+	string $result =$paintWeightNamePrefix+"_"+$obj+"_SG";
+	if(!`objExists $shader`)
+		 shadingNode -asShader -n $shader lambert;
+	if(!`objExists $result`)
+		sets -renderable true -noSurfaceShader true -empty -name $result;
+	string $cons[]=`listConnections -s 1 ($result+".surfaceShader")`;
+	if(!stringArrayContains($shader,$cons))
+		connectAttr -f ($shader+".outColor") ($result+".surfaceShader");
+	return $result;
+}
+	
+global proc assignThisShader(string $obj, string $shader)
+{
+	string $shaderNode[]=`listConnections ($shader+".surfaceShader")`;	
+	select -r $obj;
+	hyperShade -assign $shaderNode;
+	}
+global proc string createFileTexture(string $obj)
+{
+	string $file=`shadingNode -asTexture file -n ($obj+"_file#")`;
+	string $place2d=`shadingNode -asUtility place2dTexture -n ($obj+"_place2dTex#")`;
+	connectAttr -f ($place2d+".coverage") ($file+".coverage");
+	connectAttr -f ($place2d+".translateFrame") ($file+".translateFrame");
+	connectAttr -f ($place2d+".rotateFrame") ($file+".rotateFrame");
+	connectAttr -f ($place2d+".mirrorU") ($file+".mirrorU");
+	connectAttr -f ($place2d+".mirrorV") ($file+".mirrorV");
+	connectAttr -f ($place2d+".stagger") ($file+".stagger");
+	connectAttr -f ($place2d+".wrapU") ($file+".wrapU");
+	connectAttr -f ($place2d+".wrapV") ($file+".wrapV");
+	connectAttr -f ($place2d+".repeatUV") ($file+".repeatUV");
+	connectAttr -f ($place2d+".offset") ($file+".offset");
+	connectAttr -f ($place2d+".rotateUV") ($file+".rotateUV");
+	connectAttr -f ($place2d+".noiseUV") ($file+".noiseUV");
+	connectAttr -f ($place2d+".vertexUvOne") ($file+".vertexUvOne");
+	connectAttr -f ($place2d+".vertexUvTwo") ($file+".vertexUvTwo");
+	connectAttr -f ($place2d+".vertexUvThree") ($file+".vertexUvThree");
+	connectAttr -f ($place2d+".vertexCameraOne") ($file+".vertexCameraOne");
+	connectAttr ($place2d+".outUV") ($file+".uv");
+	connectAttr ($place2d+".outUvFilterSize") ($file+".uvFilterSize");
+	return $file;
+	}	
+global proc selectPreController()
+{
+	int $xRes=`intFieldGrp -q -value1 textureResField`; 
+	int $yRes=`intFieldGrp -q -value2 textureResField`; 
+	string $selectedItem[]=`textScrollList -q -si paintPreConWeightScroll`;
+	
+	global string $currentPaintPreFeather;
+	string $inGrowMesh[]=`listConnections -s 1 -type "mesh" ($currentPaintPreFeather+".inGrowMesh")`;
+	string $meshShape=jcGetTransformShape($inGrowMesh[0],"mesh");
+	string $sn=shortNameOf($currentPaintPreFeather);
+	string $lambertSG = createNewColorLambert($sn);
+	string $shaders[]=`listConnections ($lambertSG+".surfaceShader")`;
+	if(`size $shaders`==0)return;
+	assignThisShader($inGrowMesh[0],$lambertSG);
+	DisplayShadedAndTextured;
+	checkCurrentPanel();
+	
+	string $controlShape=jcGetTransformShape($selectedItem[0],"jcPreController");
+	string $inMap[]=`listConnections -s 1 ($controlShape+".controllerWeightMap")`;
+	if(`size $inMap`!=0&&`nodeType $inMap`!="file")
+	{
+		warning ("JCFeather : "+$controlShape+" is connected to a not file type texture. Please disconnect the texture.");
+		select -r $selectedItem[0];
+		return;
+	}
+	if(`size $inMap`==0)
+	{
+		string $siShN=shortNameOf($selectedItem[0]);
+		string $fileTex=createFileTexture($siShN);
+		connectAttr -f ($fileTex+".outColor") ($shaders[0]+".color");
+		connectAttr -f ($fileTex+".outColor") ($controlShape+".controllerWeightMap");
+	}
+	else
+	{
+		if(`nodeType $inMap[0]`=="file")
+		{
+			string $outCo[]=`listConnections -type "lambert" ($inMap[0]+".outColor")`;
+			if(!stringArrayContains($shaders[0],$outCo))
+				connectAttr -f ($inMap[0]+".outColor") ($shaders[0]+".color");
+		}
+	}
+	
+	select -cl;
+	select -r $inGrowMesh[0];	
+	global string $paintWeightContext;
+	if(!`art3dPaintCtx -ex $paintWeightContext`)
+		art3dPaintCtx $paintWeightContext;
+	setToolTo $paintWeightContext;
+	art3dPaintCtx -e -filetxtsizex $xRes $paintWeightContext;
+	art3dPaintCtx -e -filetxtsizey $yRes $paintWeightContext;
+	art3dPaintCtx -e -fileformat tga $paintWeightContext;	
+}
+global proc checkCurrentPanel()
+{
+	global string $gDynPaintEditorName;
+	string $currentPanel = `getPanel -withFocus`;   
+	string $panelType = `getPanel -to $currentPanel`;  
+	if ($panelType ==  "modelPanel") 
+	{    
+		modelEditor -edit -da "smoothShaded" -displayTextures on -dl "default" $currentPanel;  
+	}
+	else if (`isTrue "MayaCreatorExists"` && `scriptedPanel -ex $currentPanel` && `scriptedPanel -q -type $currentPanel` == "dynPaintScriptedPanelType") 
+	{     
+		dynPaintEditor -e -dtx 1 -dsa "smoothShaded" -dsl "default" $gDynPaintEditorName;  
+	} 
+	else if ($panelType ==  "scriptedPanel") 
+	{ 	
+		string $cmd = "modelEditor -edit -displayAppearance \"smoothShaded\" -displayTextures on -displayLights \"default\" "; 
+		scriptedPanelRunTimeCmd( $cmd, $currentPanel ); 
+	}
+}
+
+//-------------------------------------------------------------------------paint controller weight window
+//--------------------------------------
+//--------------------------------------
+//--------------------------------------
+global proc paintPreControllerWeightWindow()
+{
+	string $sel[]=`ls -sl`;
+ 	if(`size $sel`==0)
+	 	error "JCFeather : Select a jcPreFeather node.";	
+ 	string $preFeather=jcGetTransformShape($sel[0],"jcPreFeather");
+ 	if($preFeather=="")
+	 	error "JCFeather : Select a jcPreFeather node.";	
+	
+	DisplayShadedAndTextured;
+	checkCurrentPanel();
+	if(`window -ex paintPreWeight_window`)
+         deleteUI -window paintPreWeight_window;
+	window -title "Paint Precontroller Weight"
+ 		-iconName "PPW"
+ 		-widthHeight 350 250 paintPreWeight_window;
+ 	global string $currentPaintPreFeather="";
+ 	$currentPaintPreFeather = $preFeather;
+ 	string $allPreController[]=`listConnections -s 1 -type "jcPreController" $preFeather`;
+ 	$allPreController=stringArrayRemoveDuplicates($allPreController);
+	int $sizeCon=`size $allPreController`;
+	string $textScrollListCmd="textScrollList -numberOfRows "+$sizeCon+"-allowMultiSelection false ";
+ 	for($con in $allPreController)
+ 	{
+	 	$textScrollListCmd+="-append ";
+	 	$textScrollListCmd+=$con;
+	 	$textScrollListCmd+=" ";
+	 	}
+	if($sizeCon!=0)
+	{
+		$textScrollListCmd+= "-selectItem ";
+		$textScrollListCmd+=$allPreController[0];
+		$textScrollListCmd+= " -showIndexedItem 1";
+	}
+	$textScrollListCmd +=" -sc \"selectPreController\" paintPreConWeightScroll";
+ 	columnLayout -adjustableColumn true;
+ 	if($sizeCon!=0)
+ 		eval($textScrollListCmd);
+ 	else
+ 		textField -t ($preFeather+" has no connected jcPreController.");
+ 	intFieldGrp -numberOfFields 2 -label "Texture Resolution" -value1 256 -value2 256 textureResField;
+ 	button -label "Refresh Window" -command "paintPreControllerWeightWindow";
+
+ 	showWindow paintPreWeight_window;
+	}
+	
+// ------------create shelf
+global proc doCreateJCFeatherShelf(string $sheN)
+{
+	shelfButton
+		-image "featherLib.png"
+		-overlayLabelColor 0 0 0 
+		-overlayLabelBackColor 0 0 0 0
+		-label "FeatherLibrary"
+		-annotation "Feather Library"
+		-command "jcFeatherLibrary"
+		;
+	shelfButton	-enable false;		
+	shelfButton
+		-image "featherTools.png"
+		-overlayLabelColor 0 0 0 
+		-overlayLabelBackColor 0 0 0 0
+		-label "FeatherRenderTools"
+		-annotation "Feather Render Tools"
+		-command "source jcFeatherToolsUI.mel;jcFeatherToolsUI"
+		;
+	shelfButton
+		-image "growFea.png"
+		-overlayLabelColor 0 0 0 
+		-overlayLabelBackColor 0 0 0 0
+		-label "GrowOOB"
+		-annotation "Grow Objects On Body"
+		-command "source growFeatherGuids.mel;growFeatherGuids"
+		;
+		
+	shelfButton	-enable false;
+	
+	shelfButton
+		-image "updateComUV.png"
+		-overlayLabelColor 0 0 0 
+		-overlayLabelBackColor 0 0 0 0
+		-label "updateComArrayUV"
+		-annotation "Select a geometry and a jcFeatherComponentArray node.Update jcFeaComArray node's uv data."
+		-command "import jcNodeUtility as jcnu\njcnu.updateJCFComAryUV()"
+		-stp "python"
+		;	
+		
+	shelfButton	-enable false;			
+	shelfButton
+		-image "hairGen.png"
+		-overlayLabelColor 0 0 0 
+		-overlayLabelBackColor 0 0 0 0 
+		-label "MakeGeoDyLiH"
+		-annotation "Make Geometry Dynamic Like Hair"
+		-command "source hairGenFromGeo.mel;hairGenFromGeo"
+		;	
+	shelfButton
+		-image "multiComponent.png"
+		-overlayLabelColor 0 0 0 
+		-overlayLabelBackColor 0 0 0 0
+		-label "multijcFeaComponent"
+		-annotation "Create multi jcFeatherComponent for multi vertices"
+		-command "createMultiJCFeatherComponent"
+		;
+	shelfButton
+		-image "paintSkinWeights.png"
+		-overlayLabelColor 0 0 0 
+		-overlayLabelBackColor 0 0 0 0
+		-label "paintPreConWeight"
+		-annotation "Select jcPreFeather node to paint its preController Weight."
+		-command "paintPreControllerWeightWindow"
+		;							
+	shelfStyle("nochange", "nochange", $sheN);
+	}
+
+//------------------------------------------------------------------------------------Create JCFeather Shelf toolbar
+global proc createJCFeatherShelf()
+{
+	global string	$gShelfTopLevel;
+
+	if (($gShelfTopLevel == "") || !`shelfTabLayout -exists $gShelfTopLevel`)
+		return;
+	string $shelfName="JCFeather";
+	int	$shelfNum;
+	int	$numShelves = `optionVar -q numShelves`;
+
+	for ($shelfNum = 1; $shelfNum <= $numShelves; $shelfNum++)
+	{
+		string	$name = `optionVar -q ("shelfName" + $shelfNum)`;
+
+		if ($name == $shelfName)
+		{
+			if (!`shelfLayout -exists $shelfName`)  return;
+
+		    break;
+		   }
+	}
+	
+	if ($shelfNum <= $numShelves)
+	{
+		string	$children[] = `shelfLayout -q -ca $shelfName`;
+		string	$child;
+
+		for ($child in $children) deleteUI $child;
+	}
+	else
+	{
+
+		optionVar -iv numShelves $shelfNum;
+		optionVar -sv ("shelfName" + $shelfNum) $shelfName;
+
+		setParent $gShelfTopLevel;		
+		shelfLayout $shelfName;
+	}
+	
+	setParent $shelfName;
+	doCreateJCFeatherShelf($shelfName);
+
+}	
+	
+//--------------------------------------------------------------------------write preGuide node data and scatter node data 
+//--------------------------------------------------------------------------- UI
+//---------------------------------------------------------------------------
+proc setStandardFeatherAttr(string $featherNode)
+{
+	setAttr ($featherNode+".keyBarbuleStartAngle1") 0;
+	setAttr ($featherNode+".keyBarbuleStartAngle2") 0;
+	setAttr ($featherNode+".keyBarbuleStartAngle3") 0;
+	setAttr ($featherNode+".keyBarbuleStartAngle4") 0;
+	setAttr ($featherNode+".barbuleLength") 1.5;
+	
+	int $instanceNum[]=`getAttr -mi ($featherNode+".leftBarbuleLengthScale")`;
+	int $i=1;
+	for(;$i<`size $instanceNum`;++$i )
+		removeMultiInstance -break true ($featherNode+".leftBarbuleLengthScale["+$instanceNum[$i]+"]");
+	float $pos0=`getAttr ($featherNode+".leftBarbuleLengthScale[0].leftBarbuleLengthScale_Position")`;
+	setAttr ($featherNode+".leftBarbuleLengthScale[1].leftBarbuleLengthScale_Position") ($pos0+0.1);
+	setAttr ($featherNode+".leftBarbuleLengthScale[1].leftBarbuleLengthScale_FloatValue") 1;
+	setAttr ($featherNode+".shapeSymmetry") 1;
+	
+}
+global proc getPresetToJCFeather(string $presetName)
+{
+	string $sel[]=`ls -sl`;
+	if(`size $sel`==0) error "jcFeather: Select jcFeather node.";
+	string $realMel=$presetName+".mel";
+	string $cmd="applyPresetToNode \"";
+	for($s in $sel)
+	{
+		string $newCmd=$cmd;
+		string $sh = jcGetTransformShape($s,"jcFeather");
+		if( $sh=="") continue;
+		
+		string $inComponent[]=`listConnections -s 1 -d 0 -sh 1 -type jcFeatherComponent $sh`;
+		string $inComponentArray[]=`listConnections -s 1 -d 0 -sh 1 -type jcFeatherComponentArray $sh`;
+		int $isExFeather=0;
+		if(`size $inComponent`!=0)
+			$isExFeather= `getAttr ($inComponent[0]+".exMeshFeather")`;
+		else if(`size $inComponentArray`!=0)
+			$isExFeather= `getAttr ($inComponentArray[0]+".exMeshFeather")`;
+		
+				
+		$newCmd+=$sh;
+		$newCmd += "\" \"\" \"\" \""; 
+		$newCmd += $realMel;
+		$newCmd += "\" 1";
+		eval($newCmd);
+		
+		if($isExFeather)
+			setStandardFeatherAttr($sh);
+	}
+	
+}
+	
+//-------------------------------------------------------------------------------------------feather library UI    image format 200*200k
+//------------------------------------------------
+//------------------------------------------------
+//------------------------------------------------
+global proc jcFeatherLibrary()
+{
+	if(`window -ex jcFeatherLibWindow`)
+         deleteUI -window jcFeatherLibWindow;
+	window -title "jcFeather Library"
+ 		-iconName "jcl"
+ 		-widthHeight 300 210 jcFeatherLibWindow;
+ 	columnLayout -adjustableColumn true;
+ 	string $myPath=getJCFeatherLocation();
+ 	string $fromNP=fromNativePath($myPath);
+ 	string $exMesh=$fromNP+"/scripts/attrPresets/ft.ma";
+ 	int $hasExMesh=false;
+	string $relativePathEnv = $fromNP+"/scripts/attrPresets/jcFeather/";
+	string $featherLib = $relativePathEnv;
+	
+ 	string $tabs = `tabLayout -innerMarginWidth 5 -innerMarginHeight 5 jcLibTab`;
+
+ 	//attribute preset lib
+ 	
+ 	string $featherPics[]=`getFileList -folder  $featherLib -filespec "*.mel"`;
+ 	int $i=0,$shaderSize=`size $featherPics`;
+ 	int $numPerRow=5,$numPerPage=25,$currentPage=0;
+	
+ 	string $shaderColLayout = `columnLayout -adjustableColumn false`; 
+ 	string $buffer[];
+ 	for(;$i<$shaderSize;$i+=$numPerRow)
+ 	{
+	 	int $j=0;
+		rowLayout -numberOfColumns $numPerRow;
+		for(;$j<$numPerRow;$j++)
+	 	{
+		 	if(($i+$j)<$shaderSize)
+		 	{
+			 	tokenize  $featherPics[$i+$j] "." $buffer;
+		 		string $baseName=`basenameEx($buffer[0])`;
+		 		string $cmd="getPresetToJCFeather(\""+$featherLib+"/"+$buffer[0]+"\")";	
+		 		symbolButton -w 100 -h 100 -ann $baseName -c $cmd -image ($buffer[0]+".png");
+	 		}
+	 		if($i==($shaderSize-1)&&$j<($numPerRow-1)&&!$hasExMesh)
+	 		{
+	 		    symbolButton -w 100 -h 100 -ann "Import exMesh for feather." -c ("file -i \""+$exMesh+"\"") -image "libFeaExMesh.png";
+	 		    $hasExMesh = true;
+	 		}
+		}
+		setParent ..;
+	}
+	if(!$hasExMesh)
+	{
+	    rowLayout -numberOfColumns $numPerRow;
+	    symbolButton -w 100 -h 100 -ann "Import exMesh for feather." -c ("file -i \""+$exMesh+"\"") -image "libFeaExMesh.png";
+	}
+	tabLayout -edit
+         -tabLabel $shaderColLayout "JCFeather"
+         -st $shaderColLayout  
+         $tabs; 
+         
+ 	window -e -widthHeight 530 500 jcFeatherLibWindow ;
+	showWindow jcFeatherLibWindow;	
+}
+		
+global proc jcUninstalMenu()
+{
+		global string $gMainWindow;
+		string $mayaMode = `setMenuMode`;
+		int $index = -1;
+		if(`menu -exists jcFeatherMenu`) 
+				deleteUI -menu jcFeatherMenu;
+}
+
+global proc string[] getRenderLayerJCFeather(string $layer)
+{
+	string $default=plugNodeStripped($layer);
+	if($default=="defaultRenderLayer")
+	{
+		string  $alljcf[]=`ls -type "jcFeather"`;
+		string  $alljcfSys[]=`ls -type "jcFeatherSystem"`;
+		string $newSel[]=stringArrayCatenate($alljcf,$alljcfSys);
+		return $newSel;		
+		}
+	
+	string $renderableFeather[];
+	string $rl=`plugNodeStripped $layer`;
+
+    string $outConOri[]=`listConnections -d 1 ($layer+".renderInfo")`;
+    string $outCon[];
+    for($node in $outConOri)
+    {
+         string $shapes[]=`listRelatives -c -s $node`;
+         for($s in $shapes)$outCon[`size $outCon`]=$s;
+         $outCon[`size $outCon`]=$node;
+    }
+    
+    for($node in $outCon)
+    {
+        string $feather=jcGetTransformShape($node,"jcFeather");
+        string $featherSys=jcGetTransformShape($node,"jcFeatherSystem");
+        if( $feather!="")
+        {
+            string $outMesh[]=`listConnections -sh 1 -d 1 ($feather+".outputMesh")`;
+            if(`size $outMesh`!=0 &&stringArrayContains($outMesh[0],$outCon))
+              $renderableFeather[`size $renderableFeather`]=$feather;
+
+        }
+        if($featherSys!="")
+        {
+            string $outMesh[]=`listConnections -sh 1 -d 1 ($featherSys+".outFeatherMesh")`;
+            if(`size $outMesh`!=0 &&stringArrayContains($outMesh[0],$outCon))
+              $renderableFeather[`size $renderableFeather`]=$featherSys;    
+        }
+    }
+    return $renderableFeather;
+	}
+	
+global proc string createCPOMComArray(string $geo)
+{
+	string $npom;
+	if(`nodeType $geo` == "mesh")
+	{
+		$npom=`createNode "closestPointOnMesh"`;
+		connectAttr ($geo+".outMesh") ($npom+".inMesh");
+		connectAttr ($geo+".worldMatrix") ($npom+".inputMatrix");
+		return $npom;	
+	}
+	else
+	{
+		$npom=`createNode "closestPointOnSurface"`;
+		connectAttr ($geo+".worldSpace[0]") ($npom+".inputSurface");
+		return $npom;
+	}
+}
+
+global proc float[] getClosestUVComArray(string $np,vector $posVect)
+{
+		float $pos[3];
+		$pos[0]=$posVect.x;
+		$pos[1]=$posVect.y;
+		$pos[2]=$posVect.z;
+		setAttr ($np+".inPositionX")  $pos[0];	
+		setAttr ($np+".inPositionY")  $pos[1];
+		setAttr ($np+".inPositionZ")  $pos[2];
+		float $r[2];
+		$r[0] =`getAttr ($np+".parameterU")`;
+		$r[1] =`getAttr ($np+".parameterV")`;	
+		return $r;
+}	
+
+global proc vector[] getComArrayBasePosition(string $comANode)
+{
+	string $vtgrp = `getAttr ($comANode+".vertexGroup")`;
+	
+	string $buffer[]=stringToStringArray($vtgrp," ");
+	if(`size $buffer`==0) error "No vertices id.";
+	string $buffer1[]=stringToStringArray($vtgrp,":");
+	if(`size $buffer1`==0) error "No vertices id.";
+	int $startVerid=$buffer1[0];
+
+	int $wstep = `getAttr ($comANode+".walkStep")`;
+	int $wtimes = `getAttr ($comANode+".walkTimes")`;
+	string $inMeshes[]=`listConnections -s 1 -d 0 -sh 1 ($comANode+".inMesh")`;
+   int $maxWalkT=0;
+   if($wtimes==-1)	$maxWalkT=1000000;
+ 	vector $result[];  
+	for($m in $inMeshes)
+	{
+    	int $verNum[]=`polyEvaluate -v $m`;
+    	int $i=$startVerid;
+    	for(;$i<$maxWalkT;$i+=$wstep)
+          if($i<$verNum[0]) 
+              $result[`size $result`]=`pointPosition -w ($m+".vtx["+$i+"]")`;
+	}
+	return $result;
+}
+
+//--------select a gemotry and jcFeatherComponentArray node to update the cache uv data
+//--------This function is obsolete, please use the python function in jcNodeUtiltiy.py , updateJCFComAryUV()
+global proc updateJCComArrayUV()
+{
+	string $sel[]=`ls -sl`;
+	if(`size $sel`!=2) error "Need select geometry and jcFeatherComponentArray.";
+	
+	string $geo=jcGetTransformShape($sel[0],"mesh");
+	if($geo=="")$geo=jcGetTransformShape($sel[0],"nurbsSurface");
+	if($geo=="") error "Need mesh or nurbsSurface.";
+	string $cpomNode = createCPOMComArray($geo);
+	
+	string $comArray = jcGetTransformShape($sel[1],"jcFeatherComponentArray");
+	vector $basePos[]= getComArrayBasePosition($comArray);
+	
+	float $uValue[];
+	float $vValue[];
+	float $tempUV[];
+	for($pos in $basePos)
+	{
+		$tempUV = getClosestUVComArray($cpomNode,$pos);
+		$uValue[`size $uValue`]=$tempUV[0];
+		$vValue[`size $vValue`]=$tempUV[1];		
+	}
+	
+	//------------set attr
+	int $uSize=`size $uValue`;
+	string $cmd="setAttr " + $comArray + ".uArrayData -type doubleArray "+$uSize;
+	for($value in $uValue) 
+	{
+		$cmd+=" ";
+		$cmd+=$value;
+		}
+	eval($cmd);
+	
+	//------------set attr
+	int $vSize=`size $vValue`;
+	$cmd="setAttr " + $comArray + ".vArrayData -type doubleArray "+$vSize;
+	for($value in $vValue) 
+	{
+		$cmd+=" ";
+		$cmd+=$value;
+		}
+	eval($cmd);
+		
+	//------------delete node
+	if(`objExists $cpomNode`)
+		delete $cpomNode;
+	}
+	
+//--------------------------------------------------------------------paint feather rotate and scale vertex attribute
+//---------------------------
+//---------------------------
+//---------------------------
+//---------------------------
+//---return string[] ; 0: jcPreFeather node, 1: grow mesh
+global proc string[] getGrowMeshForPreFeaMesh(string $mesh)
+{
+	string $result[2];
+	string $preFeatherMesh=jcGetTransformShape($mesh,"mesh");
+	string $preFeatherNode=jcGetTransformShape($mesh,"jcPreFeather");
+	if($preFeatherMesh==""&&$preFeatherNode=="") error "JCFeather : Please select a prefeather output mesh, or jcPreFeather node, or preFeather grow mesh.";
+	
+	string $preFeaShape="";
+	string $preFeaNodes[];
+	if($preFeatherMesh!="")
+	{
+		string $preMeshHistory[]=`listHistory $preFeatherMesh`;
+		for($s in $preMeshHistory)
+			if(`nodeType $s`=="jcPreFeather")
+				$preFeaShape=$s;
+				
+		if($preFeaShape!="")
+		{
+			$result[0]=	$preFeaShape;	
+			string $meshShape[]=`listConnections -s 1 -d 0 -sh 1 ($preFeaShape+".inGrowMesh")`;
+			if(`size $meshShape`!=0)
+			{
+				$result[1]=$meshShape[0];	
+				return $result;
+			}
+			else
+				return {};
+		}
+		else 
+		{
+			$preFeaNodes=`listConnections -s 0 -d 1 -sh 1 -type "jcPreFeather" ($preFeatherMesh+".worldMesh")`;
+			if($preFeaShape==""&&`size $preFeaNodes`==0) 
+				error ("JCFeather : "+$preFeatherMesh+" mesh has jcPreFeather connnection.");	
+				
+			if(`size $preFeaNodes`!=0)
+			{
+				$result[0]=	$preFeaNodes[0];
+				$result[1]=$preFeatherMesh;	
+				return $result;
+				}
+			else
+				return {};	
+		}
+	}
+	else if($preFeatherNode!="")
+	{
+		$preFeaShape=$preFeatherNode;
+
+		$result[0]=	$preFeaShape;
+		string $meshShape[]=`listConnections -s 1 -d 0 -sh 1 ($preFeaShape+".inGrowMesh")`;
+		if(`size $meshShape`!=0)
+		{
+			$result[1]=$meshShape[0];	
+			return $result;
+		}
+		else
+			return {};
+	}
+}
+
+global proc initFeatherPaintAtCreate(string $mesh,string $preFeather)
+{
+				addFeatherPaintAttrs($mesh);
+				if(!`isConnected ($mesh+".jcFeatherRoll") ($preFeather+".paintRoll")`)
+					connectAttr ($mesh+".jcFeatherRoll") ($preFeather+".paintRoll");
+				if(!`isConnected ($mesh+".jcFeatherYaw") ($preFeather+".paintYaw")`)
+					connectAttr ($mesh+".jcFeatherYaw") ($preFeather+".paintYaw");
+				if(!`isConnected ($mesh+".jcFeatherPitch") ($preFeather+".paintPitch")`)
+					connectAttr ($mesh+".jcFeatherPitch") ($preFeather+".paintPitch");
+				if(!`isConnected ($mesh+".jcFeatherLength") ($preFeather+".paintLength")`)
+					connectAttr ($mesh+".jcFeatherLength") ($preFeather+".paintLength");
+				if(!`isConnected ($mesh+".jcFeatherThick") ($preFeather+".paintThick")`)
+					connectAttr ($mesh+".jcFeatherThick") ($preFeather+".paintThick");
+				if(!`isConnected ($mesh+".jcFeatherWidth") ($preFeather+".paintWidth")`)
+					connectAttr ($mesh+".jcFeatherWidth") ($preFeather+".paintWidth");
+				if(!`isConnected ($mesh+".jcFeatherBend") ($preFeather+".paintBendCurvature")`)
+					connectAttr ($mesh+".jcFeatherBend") ($preFeather+".paintBendCurvature");					
+				print ("JCFeather : Make "+$preFeather+" node paintable.\n");
+	}
+	
+global proc initMeshFeatherPaintAttr()
+{
+	string $sel[]=`ls -sl`;
+	if(`size $sel`>0)
+		for($s in $sel)
+		{
+			string $preInput[]=getGrowMeshForPreFeaMesh($s);
+			if(`size $preInput`==2 )
+				initFeatherPaintAtCreate($preInput[1],$preInput[0]);
+		}
+}
+//------import all the textures in the folder to jcFeather paintable attributes.
+global proc doImportAllJCFeaPaintAttr(string $dir)
+{
+	global string $jcFeatherPainter;
+	string $meshAttrs[]={"jcFeatherRoll","jcFeatherYaw","jcFeatherPitch","jcFeatherLength","jcFeatherThick","jcFeatherWidth"};
+	if(!endsWith($dir,"/")) $dir+="/";
+	string $allFiles[]=`getFileList -filespec "*.iff" -folder $dir`;
+
+	string $sel[]=`ls -sl`;
+	if(`size $sel`>0)
+	{
+		string $preInput[]=getGrowMeshForPreFeaMesh($sel[0]);
+		if(`size $preInput`==2 )
+		{ 
+			artAttrCtx -e -sao "absolute" $jcFeatherPainter;
+		   	setToolTo $jcFeatherPainter; 
+		   	string $meshNode=plugNodeStripped($preInput[1]);				
+			for($m in $meshAttrs)
+			{
+				for($iffFile in $allFiles)
+				{
+					if(!endsWith($iffFile,($m+".iff"))) continue;
+					
+	    			string $mPaintAttr="mesh."+$meshNode+"."+$m;
+					artSetToolAndSelectAttr( "artAttrCtx", $mPaintAttr );
+					
+					string $fileName=$dir+$iffFile;
+					string $cmd="artAttrCtx -e -ifm \"luminance\" ";
+					$cmd +=("-importfileload \""+$fileName+"\" ");
+					$cmd +=$jcFeatherPainter;
+					eval( $cmd);
+					break;
+				}
+			}
+		}
+		
+	}
+	setToolTo moveSuperContext;
+}
+//------export paint attributes to image files
+global proc string doExportAllJCFeaPaintAttr(string $dir,string $filePrefix,int $fileSize)
+{
+	global string $jcFeatherPainter;
+	string $meshAttrs[]={"jcFeatherRoll","jcFeatherYaw","jcFeatherPitch","jcFeatherLength","jcFeatherThick","jcFeatherWidth","jcFeatherBend"};
+	artAttrCtx -e -exportfilesizex $fileSize -exportfilesizey $fileSize $jcFeatherPainter;;
+		
+	if(!endsWith($dir,"/")) $dir+="/";
+	string $sel[]=`ls -sl`;
+	if(`size $sel`>0)
+	{
+		string $preInput[]=getGrowMeshForPreFeaMesh($sel[0]);
+		if(`size $preInput`==2 )
+		{ 
+		   	setToolTo $jcFeatherPainter; 	
+			string $meshNode=plugNodeStripped($preInput[1]);
+			$dir +=("jcFeaPaint_"+$meshNode+"/");
+			if(!`filetest -d $dir`)
+				sysFile -md $dir;
+
+			for($m in $meshAttrs)
+			{
+    			string $mPaintAttr="mesh."+$meshNode+"."+$m;
+				artSetToolAndSelectAttr( "artAttrCtx", $mPaintAttr );
+				string $cmd="artAttrCtx -e ";
+				$cmd +=("-exportfilesave \""+$dir+$filePrefix+"_"+$meshNode+"_"+$m+".iff\" ");
+				$cmd +=$jcFeatherPainter;
+				eval( $cmd);
+			}
+		}
+		
+	}
+	setToolTo moveSuperContext;
+	return $dir;
+}
+//reset paint data rotate to 0, scale to 1, bend to 0. 
+global proc resetJCFeatherPaintData()
+{
+	string $sel[]=`ls -sl`;
+	for($s in $sel)
+	{
+		string $preInput[]=getGrowMeshForPreFeaMesh($s);
+		if(`size $preInput`==2 )
+		{ 
+			string $mesh = $preInput[1];
+			
+			int $verSize[]=`polyEvaluate -v $mesh`;
+			string $rotParam=" -type doubleArray "+$verSize[0];
+		 	int $ii=0;
+			for(;$ii<$verSize[0];++$ii)
+			{
+				$rotParam += " ";	
+				$rotParam += 0;	
+			}  	
+		
+			string $scalParam=" -type doubleArray "+$verSize[0];
+		 	int $ii=0;
+			for(;$ii<$verSize[0];++$ii)
+			{
+				$scalParam += " ";	
+				$scalParam += 1;	
+			}
+			eval("setAttr "+$mesh+"."+"jcFeatherRoll"+$rotParam);
+			eval("setAttr "+$mesh+"."+"jcFeatherYaw"+$rotParam);
+			eval("setAttr "+$mesh+"."+"jcFeatherPitch"+$rotParam);
+			
+			eval("setAttr "+$mesh+"."+"jcFeatherLength"+$scalParam);			
+			eval("setAttr "+$mesh+"."+"jcFeatherThick"+$scalParam);
+			eval("setAttr "+$mesh+"."+"jcFeatherWidth"+$scalParam);				
+			
+			eval("setAttr "+$mesh+"."+"jcFeatherBend"+$rotParam);				
+		}
+	}
+}
+//$operation should be "rotate" or "scale"
+global proc startJCFeatherPaint(string $meshShape,string $attr)
+{
+	if (`isUIComponentVisible("Tool Settings")`)
+ 	    toolPropertyWindow -inMainWindow false;	
+ 	    
+	string $operation="";
+	
+	if($attr=="jcFeatherRoll"||$attr=="jcFeatherYaw"||$attr=="jcFeatherPitch")
+	   $operation="rotate";
+	else if($attr=="jcFeatherLength"||$attr=="jcFeatherThick"||$attr=="jcFeatherWidth")
+	    $operation="scale";
+	else if($attr=="uniformScale")
+		$operation="uniformScale";
+	else if($attr=="jcFeatherBend")
+		$operation="jcFeatherBend";
+	else
+		return;
+	string $meshAttr="mesh."+$meshShape+"."+$attr;
+	if($operation!="uniformScale")
+	{
+		makeFeatherAttrPaintable(0);
+		makeFeatherAttrPaintable(1);
+		$meshAttr="mesh."+$meshShape+"."+$attr;
+	}
+	else
+	{
+		$meshAttr="mesh."+$meshShape+".jcFeatherLength";
+		makePaintable -aa "jcFeatherThick" -aa "jcFeatherWidth" "mesh" "jcFeatherLength";
+	}
+		
+	global string $jcFeatherPainter;
+	
+	if(!`artAttrCtx -ex $jcFeatherPainter`)
+	    artAttrCtx $jcFeatherPainter;
+	string $setArtCtxCmd="artAttrCtx -e -brf false";
+	if($operation=="rotate")
+	{
+	    $setArtCtxCmd +="-minvalue -1 -maxvalue 1 ";
+	    if(`floatSliderGrp -ex paintFeatherBrushValue`) 
+	    	floatSliderGrp -e -fieldMinValue -1 -fieldMaxValue 1 paintFeatherBrushValue;
+	    $setArtCtxCmd +="-cl \"both\" -cll -3.1416 -clu 3.1416 ";
+	    $setArtCtxCmd +="-colorrangelower -3.1416 -colorrangeupper 3.1416 ";
+	}
+	else if($operation=="scale"||$operation=="uniformScale")
+	{
+	    $setArtCtxCmd +="-minvalue -5 -maxvalue 5 ";
+	    if(`floatSliderGrp -ex paintFeatherBrushValue`) 
+	    	floatSliderGrp -e -fieldMinValue -5 -fieldMaxValue 5 paintFeatherBrushValue;
+	    $setArtCtxCmd +="-cl \"lower\" -cll 0 ";
+	    $setArtCtxCmd +="-colorrangelower 0 -colorrangeupper 2 ";  	    
+	}
+	else if($operation=="jcFeatherBend")
+	{
+		$setArtCtxCmd +="-minvalue -5 -maxvalue 5 ";
+	    if(`floatSliderGrp -ex paintFeatherBrushValue`) 
+	    	floatSliderGrp -e -fieldMinValue -5 -fieldMaxValue 5 paintFeatherBrushValue;
+	    $setArtCtxCmd +="-cl \"none\" "; 
+	    $setArtCtxCmd +="-colorrangelower -5 -colorrangeupper 5 "; 		
+	}
+	$setArtCtxCmd +=$jcFeatherPainter;
+	eval($setArtCtxCmd);
+	
+	setToolTo $jcFeatherPainter; 
+		    
+	artSetToolAndSelectAttr( "artAttrCtx", $meshAttr );
+}
+global proc makeFeatherAttrPaintable(int $paint)
+{
+	if($paint)
+	{
+		makePaintable "mesh" "jcFeatherRoll"; 
+		makePaintable "mesh" "jcFeatherYaw"; 
+		makePaintable "mesh" "jcFeatherPitch"; 
+		
+		makePaintable "mesh" "jcFeatherLength"; 
+		makePaintable "mesh" "jcFeatherThick"; 
+		makePaintable "mesh" "jcFeatherWidth"; 
+		makePaintable "mesh" "jcFeatherBend"; 		
+	}
+	else
+	{
+		makePaintable -rm "mesh" "jcFeatherRoll"; 
+		makePaintable -rm "mesh" "jcFeatherYaw"; 
+		makePaintable -rm "mesh" "jcFeatherPitch"; 
+		
+		makePaintable -rm "mesh" "jcFeatherLength"; 
+		makePaintable -rm "mesh" "jcFeatherThick"; 
+		makePaintable -rm "mesh" "jcFeatherWidth"; 
+		makePaintable -rm "mesh" "jcFeatherBend"; 		
+		}
+}
+
+//---add patint attributes to the mesh
+global proc addFeatherPaintAttrs(string $mesh)
+{
+	int $verSize[]=`polyEvaluate -v $mesh`;
+	string $rotParam=" -type doubleArray "+$verSize[0];
+ 	int $ii=0;
+	for(;$ii<$verSize[0];++$ii)
+	{
+		$rotParam += " ";	
+		$rotParam += 0;	
+	}  	
+
+	string $scalParam=" -type doubleArray "+$verSize[0];
+ 	int $ii=0;
+	for(;$ii<$verSize[0];++$ii)
+	{
+		$scalParam += " ";	
+		$scalParam += 1;	
+	}  	
+	
+	if(!`attributeExists "jcFeatherRoll" $mesh `)
+	{
+		addAttr -shortName jcfroll -longName jcFeatherRoll -h true -dataType doubleArray $mesh;
+		eval("setAttr "+$mesh+"."+"jcFeatherRoll"+$rotParam);
+    }
+    
+	if(!`attributeExists "jcFeatherYaw" $mesh `)
+	{
+		addAttr -shortName jcfyaw -longName jcFeatherYaw -h true -dataType doubleArray $mesh;
+		eval("setAttr "+$mesh+"."+"jcFeatherYaw"+$rotParam);
+    }
+    
+	if(!`attributeExists "jcFeatherPitch" $mesh `)
+	{
+		addAttr -shortName jcfpitch -longName jcFeatherPitch -h true -dataType doubleArray $mesh;
+		eval("setAttr "+$mesh+"."+"jcFeatherPitch"+$rotParam);
+    } 
+    
+	
+
+    
+	if(!`attributeExists "jcFeatherLength" $mesh `)
+	{
+		 addAttr -shortName jcflen -longName jcFeatherLength -h true -dataType doubleArray $mesh;
+		 eval("setAttr "+$mesh+"."+"jcFeatherLength"+$scalParam);
+    }
+    
+    
+	if(!`attributeExists "jcFeatherThick" $mesh `)
+	{
+		addAttr -shortName jcfthick -longName jcFeatherThick -h true -dataType doubleArray $mesh;
+		eval("setAttr "+$mesh+"."+"jcFeatherThick"+$scalParam);
+    }
+    
+    
+	if(!`attributeExists "jcFeatherWidth" $mesh `)
+	{ 
+		addAttr -shortName jcfwidth -longName jcFeatherWidth -h true -dataType doubleArray $mesh;
+		eval("setAttr "+$mesh+"."+"jcFeatherWidth"+$scalParam);
+    }
+    
+	if(!`attributeExists "jcFeatherBend" $mesh `)
+	{ 
+		addAttr -shortName jcfbnd -longName jcFeatherBend -h true -dataType doubleArray $mesh;
+		eval("setAttr "+$mesh+"."+"jcFeatherBend"+$rotParam);
+    }    
+    
+ 	makeFeatherAttrPaintable(1);
+}
+
+//get jcFeather's install location
+global proc string getJCFeatherLocation()
+{	
+	int $reg=`pluginInfo -q -r jcFeather`;
+	if($reg==0)
+		error "Cannot finde plugin jcFeather.";
+		
+	string $featherPlugin = `pluginInfo -q -p jcFeather`;
+	string $pluginDir = dirname($featherPlugin);
+	$pluginDir =fromNativePath($pluginDir);
+	int $strLen=sizeBytes($pluginDir);
+	string $realLoc=`substring $pluginDir 1 ($strLen-8)`;
+	
+	return $realLoc;
+}
+
+global proc string getArnoldInstalledLocation()
+{
+	int $reg=`pluginInfo -q -r mtoa`;
+	if($reg==0)
+		error "Cannot finde plugin mtoa.";
+		
+	string $plugin = `pluginInfo -q -p mtoa`;
+	string $pluginDir = dirname($plugin);
+	$pluginDir =fromNativePath($pluginDir);
+	int $strLen=sizeBytes($pluginDir);
+	string $realLoc=`substring $pluginDir 1 ($strLen-8)`;
+	return $realLoc;	
+}
+
+//--------------------------------------------------------------------------
+//--------------------------------------------------------------------------
+//--------------------------------------------------------------------------
+/*
+If we wanna render feather mesh as textured polygons, we need use those functions to get polygon shell uv data from jcFeatherComponentArray node.
+Store those data in mesh shape node, add doubleArray attribute to the mesh shape, and name the attributes for your render, for example, arnold attributes
+should be  
+
+"mtoa_uniform_jcshells";
+"mtoa_uniform_jcshellt";
+"mtoa_uniform_jcshellid";
+
+and  3delight attributes should be
+
+"delightUniformFloatjcshells";
+"delightUniformFloatjcshellt";
+"delightUniformFloatjcshellid";
+
+we store those attribute to geometries and make a special shader to use those data to make each shell of polygons different.
+
+*/
+//--------------------------------------------------------------------------
+//--------------------------------------------------------------------------
+//add uniform attribute to mesh shape
+global proc addMeshShell_Uniform_st(string $mesh,string $attr_s,string $attr_t,string $attr_id,float $s[],float $t[],int $id[])
+{
+	$mesh = jcGetTransformShape($mesh,"mesh");
+	int $size = `size $s`;
+	if($size ==0) error "JCFeather : No st values.";
+	int $faceSize[] = `polyEvaluate -f $mesh`;
+	if($size != $faceSize[0])
+		error ("JCFeather : The st array size is not equal to the face num of "+$mesh);
+	
+	global string $jcMeshOperateRender;	
+	string $dataType="doubleArray";
+	if($jcMeshOperateRender=="3Delight")
+		$dataType="doubleArray";
+	else
+		$dataType="Int32Array";
+		
+	if(!`attributeExists $attr_s $mesh`)
+		addAttr -longName $attr_s -dt doubleArray $mesh;
+	if(!`attributeExists $attr_t $mesh`)	
+		addAttr -longName $attr_t -dt doubleArray $mesh;
+	if(!`attributeExists $attr_id $mesh`)
+		addAttr -longName $attr_id -dt $dataType $mesh;
+				
+	string $setAttrCmd="";
+	$setAttrCmd += "setAttr "+$mesh+"."+$attr_s+" -type doubleArray "+$size+" ";
+	int $i=0;
+	for(;$i<$size;++$i)
+	{
+		$setAttrCmd += " ";
+		$setAttrCmd += $s[$i];
+	}
+	eval($setAttrCmd);
+	
+	$setAttrCmd="";
+	$setAttrCmd += "setAttr "+$mesh+"."+$attr_t+" -type doubleArray "+$size+" ";
+	for($i=0;$i<$size;++$i)
+	{
+		$setAttrCmd += " ";
+		$setAttrCmd += $t[$i];
+	}
+	eval($setAttrCmd);
+	
+	$setAttrCmd="";
+	$setAttrCmd += "setAttr "+$mesh+"."+$attr_id+" -type "+$dataType+" "+$size+" ";
+		
+	for($i=0;$i<$size;++$i)
+	{
+		$setAttrCmd += " ";
+		$setAttrCmd += $id[$i];	
+	}
+	eval($setAttrCmd);
+}
+
+//get s t id uniform value in comArray node,
+global proc string getShellST_Value_From_ComArray(string $comArray,int $meshIndex,float $outS[],float $outT[],int $outId[])
+{
+	$comArray = jcGetTransformShape($comArray,"jcFeatherComponentArray");
+	string $meshShape[]=`listConnections -s 1 -d 0 -sh 1 ($comArray+".inMesh")`;
+	
+	int $faceNum[] = `polyEvaluate -f $meshShape[$meshIndex]`;
+	int $feaNum[]=`getAttr ($comArray+".outFeatherNumArray")`;//how many feathers for each input mesh
+	
+	int $feaNum_Mesh = $feaNum[$meshIndex];//current feather num
+	int $faceNum_PerShell = $faceNum[0]/$feaNum_Mesh;
+	
+	float $tempOutS[]=`getAttr ($comArray+".outFeatherUArray")`;
+	float $tempOutT[]=`getAttr ($comArray+".outFeatherVArray")`; 
+		
+	clear $outS;
+	clear $outT;
+	clear $outId;
+	
+	int $i=0;
+	int $index=0;
+	int $startFeatherIndex=0;
+	for($i=0;$i<$meshIndex;++$i)
+		$startFeatherIndex += $feaNum[$i];
+		
+	for($i=0;$i<$feaNum_Mesh;++$i)
+	{
+		int $j=0;
+		for(;$j<$faceNum_PerShell;++$j)
+		{
+			$outS[$index]= $tempOutS[$startFeatherIndex+$i];
+			$outT[$index]= $tempOutT[$startFeatherIndex+$i];
+			$outId[$index]= $i;
+			$index++;
+		}
+	}
+	return $meshShape[$meshIndex];
+}
+
+//remove uniform attributes
+global proc removeMeshShell_stForComArrayNode( string $render)
+{
+	global string $jcMeshShell_S_ArnoldName;
+	global string $jcMeshShell_T_ArnoldName;
+	global string $jcMeshShell_ID_ArnoldName;
+	
+	global string $jcMeshShell_S_DelightName;
+	global string $jcMeshShell_T_DelightName;
+	global string $jcMeshShell_ID_DelightName;
+	
+	global string $jcMeshOperateRender;
+	
+	string $sname,$tname,$shellid;
+	$jcMeshOperateRender=$render;
+	if($render=="3Delight"){
+		$sname= $jcMeshShell_S_DelightName;
+		$tname= $jcMeshShell_T_DelightName;
+		$shellid = $jcMeshShell_ID_DelightName;
+	}
+	else if($render=="Arnold")
+	{
+		$sname= $jcMeshShell_S_ArnoldName;
+		$tname= $jcMeshShell_T_ArnoldName;
+		$shellid = $jcMeshShell_ID_ArnoldName;
+		}
+	else
+	{
+		warning ("JCFeather : JCFeather do not support the render "+$render+".\n");
+		$render = "None";
+		$sname= "jcMeshShellS";
+		$tname= "jcMeshShellT";
+		$shellid="jcShellId";
+		}
+	
+	string $sel[]=`ls -sl`;
+	if(`size $sel`==0) error "JCFeather : Select a jcFeatherComponentArray node.";
+		
+	for($s in $sel)
+	{
+		string $comAryNode=jcGetTransformShape($s,"jcFeatherComponentArray");
+		if($comAryNode=="")continue;
+
+		
+		string $meshShape[]=`listConnections -s 1 -d 0 -sh 1 ($comAryNode+".inMesh")`;
+		for($ms in $meshShape)
+		{
+			if(`attributeExists $sname $ms`)
+				deleteAttr -at $sname $ms;
+			if(`attributeExists $tname $ms`)
+				deleteAttr -at $tname $ms;
+			if(`attributeExists $shellid $ms`)
+				deleteAttr -at $shellid $ms;
+		}
+	}	
+}
+//--------call this function to add renderer uniform attributes
+global proc addMeshShell_stForComponentArrayNode(string $render)
+{
+	global string $jcMeshShell_S_ArnoldName;
+	global string $jcMeshShell_T_ArnoldName;
+	global string $jcMeshShell_ID_ArnoldName;
+	
+	global string $jcMeshShell_S_DelightName;
+	global string $jcMeshShell_T_DelightName;
+	global string $jcMeshShell_ID_DelightName;
+	
+	global string $jcMeshOperateRender;
+	
+	string $sname,$tname,$shellid;
+	$jcMeshOperateRender=$render;
+	if($render=="3Delight"){
+		$sname= $jcMeshShell_S_DelightName;
+		$tname= $jcMeshShell_T_DelightName;
+		$shellid = $jcMeshShell_ID_DelightName;
+	}
+	else if($render=="Arnold")
+	{
+		$sname= $jcMeshShell_S_ArnoldName;
+		$tname= $jcMeshShell_T_ArnoldName;
+		$shellid = $jcMeshShell_ID_ArnoldName;
+		}
+	else
+	{
+		warning ("JCFeather : JCFeather do not support the render "+$render+".\n");
+		$render = "None";
+		$sname= "jcMeshShellS";
+		$tname= "jcMeshShellT";
+		$shellid="jcShellId";
+		}
+		
+	string $sel[]=`ls -sl`;
+	if(`size $sel`==0) error "JCFeather : Select a jcFeatherComponentArray node.";
+	
+	float $meshS[];
+	float $meshT[];
+	int $meshId[];	
+	
+	for($s in $sel)
+	{
+		string $comAryNode=jcGetTransformShape($s,"jcFeatherComponentArray");
+		if($comAryNode=="")continue;
+
+		
+		string $meshShape[]=`listConnections -s 1 -d 0 -sh 1 ($comAryNode+".inMesh")`;
+		int $msNum=`size $meshShape`;
+		if($msNum==0)continue;
+		int $i=0;
+		print ("JCFeather : " + $comAryNode+ " has "+$msNum+" input mesh.\n");
+		
+		for(;$i<$msNum;++$i)
+		{
+			string $featherMesh = getShellST_Value_From_ComArray($comAryNode,$i,$meshS,$meshT,$meshId);
+			int $arraySize=`size $meshS`;
+			addMeshShell_Uniform_st($featherMesh,
+									$sname,
+									$tname,
+									$shellid,
+									$meshS,$meshT,$meshId
+									);
+			print ("JCFeather : ---"+$featherMesh+" add "+$render+" uniform attribute "+$sname+",  "+$tname+", "+$shellid+ ", array size is "+$arraySize+".\n");
+		}
+	}
+}
+//---deligth native convert textures
+global proc convertTextures(string $texture_files)
+{
+	string $file = basename($texture_files, "");
+	string $dir = substring($texture_files, 1, size($texture_files) - size($file));
+	string $textures_to_process[] = `getFileList -filespec $texture_files`;
+	for($curr_tex in $textures_to_process)
+	{
+		string $curr_file = $dir + $curr_tex;
+		string $curr_tdl = DL_convertTextureName($curr_file, 1,"");
+		print("Converted " + $curr_file + " to: " + $curr_tdl + "\n");
+	}
+}
+
+global proc string jcChangeFommat(string $file,string $post)
+{
+    string $fileN = basenameEx($file);
+    string $dirname = dirname( $file );
+    return ($dirname+"/"+$fileN+$post);
+	}
+	
+//---convert image to 3delight tdl	
+global proc string jcDelightTexmake(string $filename)
+{
+	string $result = jcChangeFommat($filename,".tdl");
+	string $prmanEnv ="";
+	
+	// use 3delight tdlmake
+	$prmanEnv+=`getenv "DELIGHT"`;
+	$prmanEnv+="/bin/tdlmake.exe";
+	if(`filetest -f $prmanEnv`)
+	{
+		$prmanEnv="\""+$prmanEnv;
+		$prmanEnv+="\" -filterwidth 3 -smode periodic -tmode periodic ";
+		$prmanEnv+=$filename+" ";
+		$prmanEnv+=$result;
+		//print $prmanEnv;
+		system($prmanEnv);
+		print("\nJCFeather: Make 3delight tex file "+$filename+" --> "+$result+"\n");
+		return $result;
+	}
+	else
+		error "JCFeather : Cannot find 3Delight folder.";
+}
+
+//----convert image to arnold tx
+global proc string jcArnoldTexmake(string $filename)
+{
+	string $result = jcChangeFommat($filename,".tx");
+	
+	string $arnoldEnv=getArnoldInstalledLocation();
+	$arnoldEnv+="bin/maketx.exe";
+	if(`filetest -f $arnoldEnv`)
+	{
+		$arnoldEnv="\""+$arnoldEnv;
+		$arnoldEnv+="\" -oiio --filter catrom ";
+		$arnoldEnv+=$filename+" --o ";
+		$arnoldEnv+=$result;
+	
+		system($arnoldEnv);
+		print("\nJCFeather: Make arnold tex file "+$filename+" --> "+$result+"\n");
+		return $result;
+	}
+	else
+		error "JCFeather : Cannot find arnold folder.";
+}
+
+//---copy jcArnold shaders to arnold mtoa directory
+global proc copyArnoldJCShader()
+{
+	string $jcfPath = getJCFeatherLocation();
+	string $arnoldPath =getArnoldInstalledLocation();
+		
+	if(`filetest -d $jcfPath`&&`filetest -d $arnoldPath`)
+	{
+	  	sysFile -copy ($arnoldPath+"shaders/jcArnoldShader.dll") ($jcfPath+"shaders/arnold/jcArnoldShader.dll");
+		sysFile -copy ($arnoldPath+"shaders/jcArnoldShader.mtd") ($jcfPath+"shaders/arnold/jcArnoldShader.mtd");
+		
+		print "JCFeather : Copy jcArnoldShader to mtoa.\n";
+	}
+}
+
+//-----------create arnold default tex mix network
+global proc string[] createArnoldJCFeaTexMixNetWork(string $textures[])
+{
+    string $allnodes[];
+    string $allShaders[]=`listNodeTypes "Utility"`;
+	int $hasJCTexMix = stringArrayContains("jcFeatherTexMix",$allShaders);
+	if($hasJCTexMix==0)
+		error "JCFeather : Please run \"copyArnoldJCShader\" in script editor to copy jcArnold shaders to mtoa directory and restart Maya.";
+		
+    string $jcMix=`shadingNode -au jcFeatherTexMix -n "jcMixNode#"`;
+    $allnodes[`size $allnodes`]=$jcMix;
+    
+    int $i=0;
+    int $texSize=`size $textures`;
+    if($texSize==0) $texSize=3;
+    string $firstImage="";
+    for(;$i<$texSize;++$i)
+    {
+      string $jcMixAIImage=`shadingNode -at aiImage -n ("jcMixImage_"+$i+"_index#")`;  
+      if($i==0)$firstImage=$jcMixAIImage;
+      connectAttr ($jcMixAIImage+".outColor") ($jcMix+".texColor"+$i) ;
+      connectAttr ($jcMixAIImage+".outAlpha") ($jcMix+".texAlpha"+$i) ;
+      $allnodes[`size $allnodes`]=$jcMixAIImage;
+      if(`size $textures`!=0)
+      {
+      		setAttr ($jcMixAIImage+".filename")  -type "string" $textures[$i];
+      		setAttr ($jcMix+".sampleEnable"+$i) 1;
+  	  }
+    }
+    
+    //------use the first texture as the default texture.
+    if(`size $textures`!=0)
+    {
+    	connectAttr ($firstImage+".outColor") ($jcMix+".defaultColor") ;
+      	connectAttr ($firstImage+".outAlpha") ($jcMix+".defaultAlpha") ;
+  	}
+  	
+  	
+    string $jcMixAIImage=`shadingNode -at aiImage -n ("jcMixSample#")`;  
+    connectAttr ($jcMixAIImage+".outColor") ($jcMix+".sampleTexture"); 
+    $allnodes[`size $allnodes`]=$jcMixAIImage;
+    
+    string $jcShell=`shadingNode -au aiUserDataFloat -n "jcShell_s_#"`; 
+    setAttr -type "string" ($jcShell+".floatAttrName") "jcshells";
+    connectAttr ($jcShell+".outValue") ($jcMixAIImage+".uvcoordsX"); 
+    $allnodes[`size $allnodes`]=$jcShell;
+    
+    $jcShell=`shadingNode -au aiUserDataFloat -n "jcShell_t_#"`; 
+    setAttr -type "string" ($jcShell+".floatAttrName") "jcshellt";  
+    connectAttr ($jcShell+".outValue") ($jcMixAIImage+".uvcoordsY"); 
+    $allnodes[`size $allnodes`]=$jcShell; 
+    
+    //string $con=`container -name "jcTexMixContainer#" -includeShaders -includeShapes -includeTransform -force -addNode $allnodes`;
+    //$allnodes[`size $allnodes`]=$con; 
+    
+    return $allnodes;
+}

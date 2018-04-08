@@ -1,0 +1,56 @@
+global proc AEjcFeatherGlobalUpdateEnableMotionblur( string $nodeName )
+{
+		int $mblur = getAttr($nodeName + ".enableMotionBlur" );
+		editorTemplate -dimControl $nodeName "motionBlurSamples" ($mblur == 0);
+		editorTemplate -dimControl $nodeName "motionBlurStep" ($mblur == 0);
+		editorTemplate -dimControl $nodeName "motionBlurFactor" ($mblur == 0);				
+}
+
+global proc AEjcFeaGlobalUpdateMT( string $nodeName )
+{
+		int $tpp = getAttr($nodeName + ".useMultiThread" );
+		editorTemplate -dimControl $nodeName "maxThreads" ($tpp == 0);			
+}
+global proc AEjcFeaGlobalUpdateDso(string $nodeName )
+{
+	int $tpp = getAttr($nodeName + ".dso" );
+	editorTemplate -dimControl $nodeName "relativePath" ($tpp == 1);
+	editorTemplate -dimControl $nodeName "gzipCompression" ($tpp == 1);
+	editorTemplate -dimControl $nodeName "dsoName" ($tpp != 1);	
+	}
+global proc AEjcFeatherGlobalsTemplate( string $nodeName )
+{
+
+	editorTemplate -beginScrollLayout;
+		editorTemplate -beginLayout "General"  -collapse 0;
+			editorTemplate -addControl "useMultiThread" "AEjcFeaGlobalUpdateMT";
+			editorTemplate -addControl "maxThreads";	
+			editorTemplate -addSeparator;		
+			editorTemplate -addControl "enableMotionBlur" "AEjcFeatherGlobalUpdateEnableMotionblur";
+			editorTemplate -addControl "motionBlurSamples";
+			editorTemplate -addControl "motionBlurStep";
+			editorTemplate -addControl "motionBlurFactor";
+			editorTemplate -addSeparator;
+			editorTemplate -addControl "tempFileDir";		
+			editorTemplate -addControl "deleteTempFile";
+			editorTemplate -addControl "";
+			editorTemplate -addControl "exportNormal";
+		editorTemplate -endLayout;
+		
+		editorTemplate -beginLayout "Renderman(3Delight)"  -collapse 0;		
+			editorTemplate -addControl "featherRibText";
+			editorTemplate -addControl "rachisMeshRibText";
+			editorTemplate -addControl "dsoName";	
+			editorTemplate -addSeparator;
+							
+			editorTemplate -addControl "dso" "AEjcFeaGlobalUpdateDso";
+			editorTemplate -addControl "diceHair";	
+			editorTemplate -addControl "delayReadArchive";	
+			editorTemplate -addControl "relativePath";
+			editorTemplate -addControl "gzipCompression";
+												
+		editorTemplate -endLayout;	
+
+	editorTemplate -addExtraControls;
+	editorTemplate -endScrollLayout;
+}

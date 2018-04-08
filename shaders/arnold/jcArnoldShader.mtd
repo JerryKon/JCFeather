@@ -1,0 +1,6 @@
+# jcFeatherTexMix                    0x00110F001
+
+[node jcFeatherTexMix]
+    maya.name               STRING  "jcFeatherTexMix"
+    maya.id                 INT     0x00110F001
+    maya.classification     STRING  "utility"

@@ -1,0 +1,175 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="featherMayaPlugin">
+      <UniqueIdentifier>{e51587fe-f5b6-461e-8880-c9eafe68ce78}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="mayaDataLib">
+      <UniqueIdentifier>{2e166659-fd95-4559-8560-d84ede90359d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="featherMayaPlugin\cmds">
+      <UniqueIdentifier>{02c5f41c-df81-4d3b-891c-55faea825e88}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="featherMayaPlugin\nodes">
+      <UniqueIdentifier>{bfcdb5d8-d41f-48cc-96d0-aa45f28c56c7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="featherMayaPlugin\data">
+      <UniqueIdentifier>{82c8b555-f5b5-40af-b116-af948caf0ebc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="mayaSdk">
+      <UniqueIdentifier>{360be843-1283-4e8b-b7a8-46d4504f4c34}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\featherMayaPlugin\glDrawFeather.h">
+      <Filter>mayaDataLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherMayaPlugin\featherGen.h">
+      <Filter>mayaDataLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherMayaPlugin\preFeatherMesh.h">
+      <Filter>mayaDataLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherMayaPlugin\jcWriteFeather.h">
+      <Filter>featherMayaPlugin\cmds</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherMayaPlugin\jcFeatherToCurves.h">
+      <Filter>featherMayaPlugin\cmds</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherGen\jcFeatherAbout.h">
+      <Filter>featherMayaPlugin\cmds</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherMayaPlugin\jcPreGuid.h">
+      <Filter>featherMayaPlugin\nodes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherMayaPlugin\jcFeather.h">
+      <Filter>featherMayaPlugin\nodes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherMayaPlugin\jcFeatherComponent.h">
+      <Filter>featherMayaPlugin\nodes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherMayaPlugin\jcFeatherComponentArray.h">
+      <Filter>featherMayaPlugin\nodes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherMayaPlugin\jcFeatherGlobals.h">
+      <Filter>featherMayaPlugin\nodes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherMayaPlugin\jcFeatherSystem.h">
+      <Filter>featherMayaPlugin\nodes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherMayaPlugin\jcPreController.h">
+      <Filter>featherMayaPlugin\nodes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherMayaPlugin\jcPreFeather.h">
+      <Filter>featherMayaPlugin\nodes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherMayaPlugin\jcInstancerToMeshCmd.h">
+      <Filter>featherMayaPlugin\cmds</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherMayaPlugin\jcScatter.h">
+      <Filter>featherMayaPlugin\nodes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherMayaPlugin\vertexDirectionData.h">
+      <Filter>featherMayaPlugin\data</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherMayaPlugin\featherTurtleArrayData.h">
+      <Filter>featherMayaPlugin\data</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherMayaPlugin\scatterPoints.h">
+      <Filter>mayaDataLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherMayaPlugin\vertexDirUVFn.h">
+      <Filter>mayaDataLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherMayaPlugin\scatterPointData.h">
+      <Filter>featherMayaPlugin\data</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherMayaPlugin\featherTurtleData.h">
+      <Filter>featherMayaPlugin\data</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherMayaPlugin\jcWriteGrowData.h">
+      <Filter>featherMayaPlugin\cmds</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherMayaPlugin\jcFeatherMayaSdk.h">
+      <Filter>mayaSdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\featherMayaPlugin\jcQueryData.h">
+      <Filter>featherMayaPlugin\cmds</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\featherMayaPlugin\featherGen.cpp">
+      <Filter>mayaDataLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherMayaPlugin\pluginMain.cpp" />
+    <ClCompile Include="..\..\featherMayaPlugin\preFeatherMesh.cpp">
+      <Filter>mayaDataLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherMayaPlugin\jcWriteFeather.cpp">
+      <Filter>featherMayaPlugin\cmds</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherMayaPlugin\jcFeatherToCurves.cpp">
+      <Filter>featherMayaPlugin\cmds</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherGen\jcFeatherAbout.cpp">
+      <Filter>featherMayaPlugin\cmds</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherMayaPlugin\jcFeather.cpp">
+      <Filter>featherMayaPlugin\nodes</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherMayaPlugin\jcFeatherComponent.cpp">
+      <Filter>featherMayaPlugin\nodes</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherMayaPlugin\jcFeatherComponentArray.cpp">
+      <Filter>featherMayaPlugin\nodes</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherMayaPlugin\jcFeatherGlobals.cpp">
+      <Filter>featherMayaPlugin\nodes</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherMayaPlugin\jcFeatherSystem.cpp">
+      <Filter>featherMayaPlugin\nodes</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherMayaPlugin\jcPreController.cpp">
+      <Filter>featherMayaPlugin\nodes</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherMayaPlugin\jcPreFeather.cpp">
+      <Filter>featherMayaPlugin\nodes</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherMayaPlugin\jcPreGuid.cpp">
+      <Filter>featherMayaPlugin\nodes</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherMayaPlugin\jcInstancerToMeshCmd.cpp">
+      <Filter>featherMayaPlugin\cmds</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherMayaPlugin\jcScatter.cpp">
+      <Filter>featherMayaPlugin\nodes</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherMayaPlugin\vertexDirectionData.cpp">
+      <Filter>featherMayaPlugin\data</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherMayaPlugin\featherTurtleArrayData.cpp">
+      <Filter>featherMayaPlugin\data</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherMayaPlugin\scatterPoints.cpp">
+      <Filter>mayaDataLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherMayaPlugin\vertexDirUVFn.cpp">
+      <Filter>mayaDataLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherMayaPlugin\scatterPointData.cpp">
+      <Filter>featherMayaPlugin\data</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherMayaPlugin\featherTurtleData.cpp">
+      <Filter>featherMayaPlugin\data</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherMayaPlugin\jcWriteGrowData.cpp">
+      <Filter>featherMayaPlugin\cmds</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherMayaPlugin\jcFeatherMayaSdk.cpp">
+      <Filter>mayaSdk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\featherMayaPlugin\jcQueryData.cpp">
+      <Filter>featherMayaPlugin\cmds</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,370 @@
+global	string	$jcFeather_delightArchiveFiles[];
+global  string  $jcFeather_delightFeatherFile;
+
+global proc string jcFeatherGetTempDir()
+{
+	string $defaultFeatherRibPath=`getAttr "jcFeatherGlobals.tempFileDir"`;
+	if( $defaultFeatherRibPath=="%temp%")
+		$defaultFeatherRibPath =`workspace -expandName "./data/"`;
+	
+	//if(`about -li`) $defaultFeatherRibPath="/tmp";	
+
+	string	$tempDir = $defaultFeatherRibPath;//getenv("TMPDIR");
+	string	$altDir = `workspace -expandName "./data/"`;
+
+	if (($tempDir != "") && (match("/$", $tempDir) == "")) $tempDir += "/";
+
+	if (($tempDir != "") && (!`filetest -d $tempDir`))
+	{
+		if (!`sysFile -makeDir $tempDir`)
+		{
+			warning(
+				"jcFeather: The TMPDIR environment variable points to '" + $tempDir
+				+ "' which does not exist."
+			);
+			warning("jcFeather: Using '" + $altDir + "' instead.");
+			return $altDir;
+		}
+	}
+
+	if (!`filetest -w $tempDir`)
+	{
+		warning(
+			"jcFeather: The TMPDIR environment variable points to '" + $tempDir
+			+ "' to which you do not have write permission."
+		);
+		warning("jcFeather: Using '" + $altDir + "' instead.");
+		return $altDir;
+	}
+
+	return $tempDir;
+ }
+
+proc int strIndex(string $needle, string $haystack)
+{
+	int	$needleLen = size($needle);
+	int	$haystackLen = size($haystack);
+	int	$i;
+
+	for ($i = 1; $i <= ($haystackLen - $needleLen) + 1; $i++)
+	{
+		if (substring($haystack, $i, $i + $needleLen - 1) == $needle)
+			return $i;
+	}
+
+	return 0;
+}
+
+global proc jcFeather_delightInit()
+{
+	if (!objExists("jcFeatherGlobals")) error "jcFeather : No jcFeatherGlobals found in the scene.";
+	
+	string $delightPass[]=`ls -sl -type delightRenderPass`;
+	if(`size $delightPass`==0) error "jcFeather : No delightRenderPass selected.";
+	for( $currentPass in $delightPass)
+	{
+		if(!`attributeExists "jcFeather" $currentPass`)
+		{
+			addAttr -ln "jcFeather"  -at bool  $currentPass;
+			setAttr -e -keyable true ($currentPass+".jcFeather");
+			}
+		setAttr ($currentPass+".jcFeather") 1 ;
+	}
+}
+
+global proc jcFeather_delightCleanup()
+{
+	string $delightPass[]=`ls -sl -type delightRenderPass`;
+	if(`size $delightPass`==0) error "jcFeather : No delightRenderPass selected.";
+	for( $currentPass in $delightPass)
+		if(`attributeExists "jcFeather" $currentPass`)
+			setAttr ($currentPass+".jcFeather") 0 ;
+}
+
+proc clearArchiveNodeRibFile()
+{
+	if(`objExists jcFeaReadArchive`&&`objExists jcFeaReadArchiveShape`)
+	{
+		lockNode -l false jcFeaReadArchive;
+		lockNode -l false jcFeaReadArchiveShape;
+		delete jcFeaReadArchive;
+	}
+}
+proc forceAddToRenderLayer(string $pass)
+{
+	string $inCon[]=`listConnections -s 1 -type "renderLayer" ($pass+".layerToRender")`;
+	string $useLayer;
+	if(`size $inCon`!=0) $useLayer=$inCon[0];
+	else	$useLayer=`editRenderLayerGlobals -query -currentRenderLayer`;
+	
+	if($useLayer!="defaultRenderLayer")
+		editRenderLayerMembers -noRecurse $useLayer "jcFeaReadArchive";		
+}
+proc setArchiveNodeRibFile(string $currentPass)
+{
+	global  string  $jcFeather_delightFeatherFile;
+	global string $jcFeather_delightArchiveFiles[];
+
+	string $filePath = $jcFeather_delightArchiveFiles[0]+$jcFeather_delightFeatherFile;
+	$filePath = toNativePath($filePath);
+	if(`filetest -f $filePath`&&`objExists "jcFeaReadArchiveShape"`)
+		setAttr -type "string" "jcFeaReadArchiveShape.ribFilename"  $filePath;	
+}
+	
+proc createDelightReadArchiveNode()
+{
+	clearArchiveNodeRibFile();
+	//if(`objExists jcFeaReadArchive`&&`objExists jcFeaReadArchiveShape`)	return;
+	
+	
+	string $sel[]=`ls -sl`;
+	
+	string $draShape =`DRA_create`;
+	select -cl;
+	rename $draShape "jcFeaReadArchiveShape";
+	setAttr "jcFeaReadArchiveShape.archiveReadMode" 1;
+	
+	string $draTransform[]=`listRelatives -p "jcFeaReadArchiveShape"`;
+	rename $draTransform[0] "jcFeaReadArchive";
+	
+	if(`size $sel`>0) select -r $sel;
+	}
+global proc addDelightProcedurePath(string $currentPass)
+{
+ 	string $dllPath=getJCFeatherLocation();
+	$dllPath+="bin/";
+	string	$path = getAttr($currentPass+".proceduralPath");
+	
+		//	If the directory isn't already there, add it.
+		if (strIndex($dllPath, $path) == 0)
+		{
+			if ($path == "")
+				$path = $dllPath;
+			else
+				$path += ":" + $dllPath;
+	
+			setAttr -type "string" ($currentPass+".proceduralPath")
+				$path;
+		}
+}
+global proc addDelightShaderPath(string $currentPass)
+{
+	string $realPlugin="jcFeather";
+	//string	$shaderDir = dirname(`pluginInfo -q -path $realPlugin`) + "/delight/shaders";
+	string	$shaderDir =getJCFeatherLocation();
+	$shaderDir+= "shaders/delight/";
+	string	$path = getAttr($currentPass+".shaderPath");
+	
+		//	If the directory isn't already there, add it.
+		if (strIndex($shaderDir, $path) == 0)
+		{
+			if ($path == "")
+				$path = $shaderDir;
+			else
+				$path += ":" + $shaderDir;
+	
+			setAttr -type "string" ($currentPass+".shaderPath")
+				$path;
+		}
+}	
+global proc addDelightArchivePath(string $currentPass)
+{
+	global string $jcFeather_delightArchiveFiles[];
+	string	$archiveDir = $jcFeather_delightArchiveFiles[0];
+	
+	string	$path = getAttr($currentPass+".archivePath");
+	
+		//	If the directory isn't already there, add it.
+	if (strIndex($archiveDir, $path) == 0)
+		{
+			if ($path == "")
+				$path = $archiveDir;
+			else
+				$path += ":" + $archiveDir;
+	
+			setAttr -type "string" ($currentPass+".archivePath")
+				$path;
+		}
+}
+global proc jcFeather_delightRenderStart()
+{
+	createDelightReadArchiveNode();//create a readArchive node to read in feather ribs
+}
+global proc string[] get3DPassRenderLayerFeather(string $currentPass)
+{
+	string $inCon[]=`listConnections -s 1 -type "renderLayer" ($currentPass+".layerToRender")`;
+
+	if(`size $inCon`==0 ) $inCon[0]=`editRenderLayerGlobals -query -currentRenderLayer`;
+	return getRenderLayerJCFeather($inCon[0]);
+}
+
+global proc string[] jcFeather_delightFrameStart(string $currentPass)
+{
+	//rib file fommate: sceneName/jcF_cg07-200_7459.rib
+	string $emptyString[]={};
+	
+	if (!objExists("jcFeatherGlobals")) return $emptyString;
+	int $useDso = `getAttr jcFeatherGlobals.dso`;
+	
+	global	string	$jcFeather_delightArchiveFiles[];
+	clear $jcFeather_delightArchiveFiles;
+	
+	int $randomNum=rand(1000,9999);
+	
+	string $hn = system("hostname");
+	string $buffer[];
+	if(endsWith($hn,"\n"))
+	{
+		tokenize $hn "\n" $buffer;
+		if(endsWith($buffer[0],"\r"))
+			tokenize $buffer[0] "\r" $buffer;
+	}
+	else
+		$buffer[0] = $hn;
+	string $sceneName=`file -q -sn`;
+	$sceneName = basenameEx($sceneName);
+	if( $sceneName =="") $sceneName = "jcUntitled";
+	
+	float	$frame = `currentTime -q`;
+	int $frameInt = (int)($frame+0.5);
+	
+	string	$dir = jcFeatherGetTempDir();
+	if(!endsWith($dir,"/"))
+		$dir+="/";	
+	$dir+="jcFeather/";
+	sysFile -makeDir $dir;	
+	$dir+=$sceneName+"/";		
+	sysFile -makeDir $dir;
+	string $dirToBeDel=$dir;
+	print ("jcFeather: Export data to "+$dir+"\n");
+	
+	//---------------get feathers for this pass
+	string $tempSel[]=get3DPassRenderLayerFeather($currentPass);
+	string $objFea="";
+	for($o in $tempSel)
+	{
+		$objFea+=" ";
+		$objFea+=$o;
+	}
+	//---------------get feathers for this pass
+	
+			
+	global  string  $jcFeather_delightFeatherFile="";
+	string $realName="";
+	
+	$realName +="jcF_";
+	$realName +=$buffer[0];
+	$realName +="_";
+	$realName +=	string($randomNum);
+	$jcFeather_delightFeatherFile = $realName;
+	$realName += ".rib";
+	$dir += $realName;
+	$jcFeather_delightFeatherFile+=".";
+	$jcFeather_delightFeatherFile+=frameToName($frameInt,4);
+	$jcFeather_delightFeatherFile+=".rib";
+		
+	string $writeFeatherCmd="jcWriteFeather ";
+	$writeFeatherCmd +="-a 1";	
+	if($useDso)
+		$writeFeatherCmd +=" -ft 2";
+	else
+		$writeFeatherCmd +=" -ft 0";
+			
+	$writeFeatherCmd +=" -p \"";
+	$writeFeatherCmd +=	$dir;
+	$writeFeatherCmd +=	"\"";	
+	$writeFeatherCmd +=" -n \"";
+	$writeFeatherCmd +=$objFea;
+	$writeFeatherCmd +=	"\"";
+	if(`size $tempSel`!=0)
+		eval($writeFeatherCmd);
+		print ("Write cmd : "+$writeFeatherCmd+"\n");
+	$jcFeather_delightArchiveFiles[0] = $dirToBeDel;
+	$jcFeather_delightArchiveFiles[1] = $dirToBeDel+frameToName($frameInt,4);	
+	
+	setArchiveNodeRibFile($currentPass);	
+	return $jcFeather_delightArchiveFiles;
+}
+
+global proc jcFeather_delightFrameEnd()//clean files after frame render
+{
+	global	string	$jcFeather_delightArchiveFiles[];
+	global  string  $jcFeather_delightFeatherFile;	
+	int $jcFeather_deleteFiles = `getAttr "jcFeatherGlobals.deleteTempFile"`;
+	
+	string $filePath = $jcFeather_delightArchiveFiles[0]+$jcFeather_delightFeatherFile;
+	$filePath = toNativePath($filePath);		
+			
+	string	$file;
+	string $cmd="del /q ";
+	if($jcFeather_deleteFiles)
+	{
+		for ($file in $jcFeather_delightArchiveFiles)
+			$cmd += "\""+$file+"\" ";
+		system($cmd);
+		
+		for ($file in $jcFeather_delightArchiveFiles)
+			sysFile -red $file;
+			
+		if(`filetest -f $filePath`)
+			sysFile -del $filePath;
+	}
+
+	clear $jcFeather_delightArchiveFiles;
+	
+	//----delete readarchive node
+	//clearArchiveNodeRibFile();
+}
+global proc DL_userPreRenderMel(string $render_pass)//just preRender
+{
+	if(`attributeExists "jcFeather" $render_pass`)
+	{
+		int $ifFeather=`getAttr ($render_pass+".jcFeather")`;
+		if($ifFeather) 
+		{
+			jcFeather_delightRenderStart();
+			forceAddToRenderLayer($render_pass);
+			addDelightShaderPath($render_pass);
+			addDelightProcedurePath($render_pass);
+		}
+	}
+}
+
+global proc DL_userPreFrameMel(string $render_pass)
+{
+	if(`attributeExists "jcFeather" $render_pass`)
+	{
+		int $ifFeather=`getAttr ($render_pass+".jcFeather")`;
+		if($ifFeather) 
+		{
+			jcFeather_delightFrameStart($render_pass);
+			forceAddToRenderLayer($render_pass);
+			addDelightArchivePath($render_pass);
+		}
+	}
+}
+	
+global proc DL_userPostFrameMel(string $render_pass)
+{
+	if(`attributeExists "jcFeather" $render_pass`)
+	{
+		int $ifFeather=`getAttr ($render_pass+".jcFeather")`;
+		if($ifFeather) 	jcFeather_delightFrameEnd();
+	}
+}	
+global proc jcFeatherDelight(int $start)
+{
+	source "jcFeatherDelight.mel";
+	string $ver=`about -v`;
+	string $verNum=`substring $ver 1 4`;
+	if(!`pluginInfo -q -loaded ("3delight_for_maya"+$verNum)`)
+	{
+		error "Cannot find 3delight plugin.";
+		return;
+	}
+	
+	if($start)
+		jcFeather_delightInit();
+	else
+		jcFeather_delightCleanup();
+	}

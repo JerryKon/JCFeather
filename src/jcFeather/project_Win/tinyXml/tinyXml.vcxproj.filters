@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <None Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="souce">
+      <UniqueIdentifier>{e9866e15-2f2f-40f2-a628-dd009c995249}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\tinyXml\tinystr.cpp">
+      <Filter>souce</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tinyXml\tinyxml.cpp">
+      <Filter>souce</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tinyXml\tinyxmlerror.cpp">
+      <Filter>souce</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tinyXml\tinyxmlparser.cpp">
+      <Filter>souce</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\tinyXml\tinystr.h">
+      <Filter>souce</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tinyXml\tinyxml.h">
+      <Filter>souce</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

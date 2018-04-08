@@ -1,0 +1,659 @@
+global proc aboutJCFeather()
+{
+	string $jcInfo=`jcFeatherAbout`;
+		string $about = "\n";
+		$about += ($jcInfo+"\n");
+		$about += "        Author: Jerry Kon\n";
+		$about += "        Email:    jerrychinese@163.com\n";
+		$about += "        Web:    www.jerrykon.com ";		
+		string $aboutjcFWindow;
+		if(`window -ex $aboutjcFWindow`)
+		      deleteUI -window $aboutjcFWindow;
+		$aboutjcFWindow = `window -title "About JCFeather"
+		          		-iconName "aboutJCF"
+		 		       -widthHeight 150 80`;
+		columnLayout -adjustableColumn true;
+		text -label "About JCFeather " ;
+		text -label $about  -align "left";		 		
+		window -e -widthHeight 200 80 $aboutjcFWindow;	
+		showWindow $aboutjcFWindow; 		
+}
+
+global proc jcFeather_rebuildAddFeatherMenu(
+	string $menu, string $cmd)
+{
+	menu -e -deleteAllItems $menu;
+
+	string	$nodes[] = `ls -type jcFeather`;
+	string	$node;
+
+	for ($node in $nodes)
+	{
+		menuItem -label $node -parent $menu
+				-enable 1
+				-command ("evalEcho " + $cmd + "(\"" + $node + "\")");
+	}
+}
+
+global proc jcFeather_rebuildAddMesh2ComArrayMenu(
+	string $menu, string $cmd)
+{
+	menu -e -deleteAllItems $menu;
+
+	string	$nodes[] = `ls -type jcFeatherComponentArray`;
+	string	$node;
+
+	for ($node in $nodes)
+	{
+		menuItem -label $node -parent $menu
+				-enable 1
+				-command ("evalEcho " + $cmd + "(\"" + $node + "\")");
+	}
+}
+global proc jcFeather_rebuildUpdatePreGuidMenu(
+	string $menu, string $cmd)
+{
+	menu -e -deleteAllItems $menu;
+
+	string	$nodes[] = `ls -type jcPreGuide`;
+	string	$node;
+
+	for ($node in $nodes)
+	{
+		menuItem -label $node -parent $menu
+				-enable 1
+				-command ("evalEcho " + $cmd + "(\"" + $node + "\")");
+	}
+}
+
+global proc jcFeather_rebuildUpdateScatterMenu(
+	string $menu, string $cmd)
+{
+	menu -e -deleteAllItems $menu;
+
+	string	$nodes[] = `ls -type jcScatter`;
+	string	$node;
+
+	for ($node in $nodes)
+	{
+		menuItem -label $node -parent $menu
+				-enable 1
+				-command ("evalEcho " + $cmd + "(\"" + $node + "\")");
+	}
+}
+global proc jcFeather_rebuildUpdatePreFeaGrowMenu(
+	string $menu, string $cmd)
+{
+	menu -e -deleteAllItems $menu;
+
+	string	$nodes[] = `ls -type jcPreFeather`;
+						    
+	for ($node in $nodes)
+	{
+		menuItem -label $node -parent $menu
+				-enable 1
+				-command ("evalEcho " + $cmd + "(\"" + $node + "\")");
+	}
+}
+
+global proc jcFeather_rebuildAddControlMenu(
+	string $menu, string $cmd)
+{
+	menu -e -deleteAllItems $menu;
+
+	string	$nodes[] = `ls -type jcPreFeather`;
+	string	$node;
+
+	for ($node in $nodes)
+	{
+		menuItem -label $node -parent $menu
+				-enable 1
+				-command ("evalEcho " + $cmd + "(\"" + $node + "\")");
+	}
+}
+
+global proc jcFeather_rebuildRemoveObjFromFeaMenu( string $menu, string $cmd )
+{
+	menu -e -deleteAllItems $menu;
+	string $featherShapes[];
+	string $sel[]=`ls -sl`;
+	if(`size $sel`==0) return;
+	
+	for($sgNode in $sel)
+	{
+		string $surfaceShape=jcGetTransformShape($sgNode,"nurbsSurface");
+		string $comShape=jcGetTransformShape($sgNode,"jcFeatherComponent");
+		string $comArrayShape=jcGetTransformShape($sgNode,"jcFeatherComponentArray");
+		string $preFeaShape=jcGetTransformShape($sgNode,"jcPreFeather");
+		
+		string $localFea[];				
+		string $nodeShape[] = `listRelatives -s $sgNode`;
+		if($surfaceShape!="" || $comShape!=""|| $comArrayShape!=""|| $preFeaShape!="")			
+			$localFea = `listConnections -sh 1 -t jcFeather $nodeShape[0]`;
+			
+		if(`size $localFea`>0)
+			$featherShapes[`size $featherShapes`] = $localFea[0];
+	}
+	
+	$featherShapes=stringArrayRemoveDuplicates($featherShapes);
+	string	$node;
+	for ($node in $featherShapes)
+	{
+		menuItem -label $node -parent $menu
+				-enable 1
+				-command ("evalEcho " + $cmd + "(\"" + $node + "\")");
+	}
+}
+global proc jcFeather_rebuildRemoveKeyFromFeatherSystemMenu(string $menu, string $cmd)
+{
+	menu -e -deleteAllItems $menu;
+	
+	string $featherShapes[];
+	string $sel[]=`ls -sl`;
+	if(`size $sel`==0) return;
+
+	for($sgNode in $sel)
+	{
+		string $localFea[];
+		string $nodeShape[] = `listRelatives -s $sgNode`;
+		if(`size $nodeShape`!=0&&`nodeType $nodeShape[0]`=="jcFeather")		
+			$localFea = `listConnections -t jcFeatherSystem ($nodeShape[0]+".featherInfoID")`;
+		if(`size $localFea`>0)
+			$featherShapes[`size $featherShapes`] = $localFea[0];
+	}
+
+	for ($node in $featherShapes)
+	{
+		menuItem -label $node -parent $menu
+				-enable 1
+				-command ("evalEcho " + $cmd + "(\"" + $node + "\")");
+	}
+	
+}
+global proc jcFeather_rebuildAddFeatherSystemMenu(
+	string $menu, string $cmd)
+{
+	menu -e -deleteAllItems $menu;
+
+	string	$nodes[] = `ls -type jcFeatherSystem`;
+	string	$node;
+
+	for ($node in $nodes)
+	{
+		menuItem -label $node -parent $menu
+				-enable 1
+				-command ("evalEcho " + $cmd + "(\"" + $node + "\")");
+	}
+}
+global proc jcFeather_rebuildSelectFeatherMenu(	string $menu )
+{
+	menu -e -deleteAllItems $menu;
+
+	string	$nodes[] = `ls -type jcFeather`;
+	string	$node;
+
+	for ($node in $nodes)
+	{
+		menuItem -label $node -parent $menu
+				-enable 1
+				-command ("select -r " +$node );
+	}
+}
+
+global proc jcUpdatePreFeaGrowMeshMenu(string $node)
+{
+	string $operation=`confirmDialog -title "Confirm" -message "Copy old paint data to new mesh?"
+					    -button "Yes" -button "No" -defaultButton "Yes"
+					    -cancelButton "No" -dismissString "No"`;
+    
+    if($operation=="Yes")
+		jcUpdatePreFeaGrowMesh($node,1);
+	else
+		jcUpdatePreFeaGrowMesh($node,0);
+	}
+	
+proc AddJCFeatherMenuItem()
+{
+	setParent -m jcFeatherMenu;
+	menuItem -label "Select JCFeather"
+						-tearOff 1
+						-allowOptionBoxes false
+						-subMenu true
+						-pmc "jcFeather_rebuildSelectFeatherMenu(\"selectjcFeather\")"						
+						selectjcFeather;
+											
+	setParent -m jcFeatherMenu;							
+	menuItem -divider true;
+
+	menuItem -label "Create Surface JCFeather"
+						-echoCommand true
+						-tearOff 1
+						-allowOptionBoxes true
+						-subMenu false
+						-ann "Select nurbs surface to create jcFeather."
+						-c "jcCreateFeather"
+						createJCF;
+	setParent -m jcFeatherMenu;						
+	menuItem -label "Create Vertices JCFeather"
+						-echoCommand true
+						-tearOff 1
+						-allowOptionBoxes true
+						-subMenu false
+						-ann "Select poly mesh vertices to create jcFeather."
+						-c "jcCreateMeshVertexFeather"
+						createJCFFM;
+	setParent -m jcFeatherMenu;								
+	menuItem -label "Create Component JCFeather"
+						-echoCommand true
+						-tearOff 1
+						-allowOptionBoxes true
+						-subMenu false
+						-ann "Select jcFeatherComponent to create jcFeather."
+						-c "jcCreateComponentFeather"
+						createJCCOMPFea;
+	setParent -m jcFeatherMenu;
+	menuItem -label "Create Component Array JCFeather"
+						-echoCommand true
+						-tearOff 1
+						-allowOptionBoxes true
+						-subMenu false
+						-ann "Select jcFeatherComponentArray to create JCFeather."
+						-c "jcCreateComponentArrayFea"
+						createJCMeshCOMPFea;
+																												
+	setParent -m jcFeatherMenu;
+	menuItem -label "Create Standard JCFeather"
+						-echoCommand true
+						-tearOff 1
+						-allowOptionBoxes true
+						-subMenu false
+						-ann "Select a jcFeather standard template mesh."
+						-c "jcCreateMeshStandardFeather"
+						createJCStandardFFM;																	
+	setParent -m jcFeatherMenu;	
+	
+	menuItem -divider true;	
+	menuItem -label "Create Vertices Component"
+						-echoCommand true
+						-tearOff 1
+						-allowOptionBoxes true
+						-subMenu false
+						-ann "Select poly mesh vertices to create jcFeatherComponent."
+						-c "jcCreateJCFeatherComponent"
+						createJCVERCOMP;
+
+
+	setParent -m jcFeatherMenu;						
+												
+	menuItem -label "Create Mesh Component Array"
+						-echoCommand true
+						-tearOff 1
+						-allowOptionBoxes true
+						-subMenu false
+						-ann "Select poly meshes to create jcFeatherComponentArray."
+						-c "jcCreateComponentArray"
+						createJCMeshCOMPA;
+	setParent -m jcFeatherMenu;					
+	menuItem -label "Create Standard Component Array"
+						-echoCommand true
+						-tearOff 1
+						-allowOptionBoxes true
+						-subMenu false
+						-ann "Select poly meshes to create standard jcFeatherComponentArray."
+						-c "jcCreateStandardComArray"
+						createJCMeshStandCOMPA;						
+
+	setParent -m jcFeatherMenu;		
+	menuItem -divider true;			
+	setParent -m jcFeatherMenu;
+	menuItem -label "Update JCFeather"
+						-echoCommand true
+						-tearOff 1
+						-allowOptionBoxes true
+						-subMenu true
+						updateJCFeatherStuff;	
+																									
+	setParent -m updateJCFeatherStuff;		
+	menuItem -divider true;	
+	menuItem -label "Add Surface To JCFeather"
+						-tearOff 1
+						-allowOptionBoxes false
+						-subMenu true
+						-ann "Select nurbs surface and add it to an existing jcFeather."
+						-pmc "jcFeather_rebuildAddFeatherMenu(\"addSurfaceTo\",\"jcAddFeather\")"						
+						addSurfaceTo;	
+						
+	setParent -m updateJCFeatherStuff;	
+	menuItem -label "Add Vertices To JCFeather"
+						-tearOff 1
+						-allowOptionBoxes true
+						-subMenu true
+						-ann "Select mesh vertices and add them to an existing jcFeather."
+						-pmc "jcFeather_rebuildAddFeatherMenu(\"addJCFFM\",\"jcAddMeshVertexFeather\")"
+						addJCFFM;
+													
+	setParent -m updateJCFeatherStuff;
+	menuItem -label "Add Component To JCFeather"
+						-echoCommand true
+						-tearOff 1
+						-allowOptionBoxes true
+						-subMenu true
+						-ann "Select jcFeatherComponent and add it to an existing jcFeather."
+						-pmc "jcFeather_rebuildAddFeatherMenu(\"addJCSFM\",\"jcAddComponentFeather\")"
+						addJCSFM;
+	setParent -m updateJCFeatherStuff;	
+	menuItem -label "Add ComponentArray  To JCFeather"
+						-echoCommand true
+						-tearOff 1
+						-allowOptionBoxes true
+						-subMenu true
+						-ann "Select jcFeatherComponentArray or jcPreFeather to add it to an existing jcFeather."
+						-pmc "jcFeather_rebuildAddFeatherMenu(\"addJCSFMArray\",\"jcAddComponentArrayFeather\")"
+						addJCSFMArray;
+		setParent -m updateJCFeatherStuff;	
+	menuItem -label "Add Standard Mesh To JCFeather"
+						-tearOff 1
+						-allowOptionBoxes true
+						-subMenu true
+						-ann "Select standard mesh and add it to an existing jcFeather."
+						-pmc "jcFeather_rebuildAddFeatherMenu(\"addStandJCM\",\"jcAddStandardMeshFeather\")"
+						addStandJCM;					
+	setParent -m updateJCFeatherStuff;	
+	menuItem -divider true;	
+	menuItem -label "Add Feather Mesh To ComponentArray"
+						-echoCommand true
+						-tearOff 1
+						-allowOptionBoxes true
+						-subMenu true
+						-ann "Select mesh and add it to an existing jcComponentArray."
+						-pmc "jcFeather_rebuildAddMesh2ComArrayMenu(\"addFMeshToComArray\",\"jcAddMeshesToComArray\")"
+						addFMeshToComArray;
+	setParent -m updateJCFeatherStuff;		
+	menuItem -label "Update Grow Mesh To ComponentArray"
+						-echoCommand true
+						-tearOff 1
+						-allowOptionBoxes true
+						-subMenu true
+						-ann "Select mesh to update an existing jcComponentArray's input grow mesh."
+						-pmc "jcFeather_rebuildAddMesh2ComArrayMenu(\"addMToComArray\",\"jcAddGrowMesh2ComponentArray\")"
+						addMToComArray;
+						
+	setParent -m updateJCFeatherStuff;																			
+	menuItem -label "Remove From JCFeather"
+						-tearOff 1
+						-allowOptionBoxes true
+						-subMenu true
+						-ann "Remove nurbs surface , jcFeatherComponent , jcFeatherComponentArray or jcPreFeather from jcFeather."
+						-pmc "jcFeather_rebuildRemoveObjFromFeaMenu(\"removeJCF\",\"jcRemoveFeather\")"
+						removeJCF;
+						
+							
+	setParent -m jcFeatherMenu;	
+	menuItem -divider true;	
+	
+	menuItem -label "JC Scatter"
+						-tearOff 1
+						-allowOptionBoxes true
+						-subMenu true
+						JCScatterParent;							
+		setParent -m JCScatterParent;	
+		menuItem -label "Create JCScatter"
+							-echoCommand true
+							-tearOff 1
+							-allowOptionBoxes true
+							-subMenu false
+							-ann "Select mesh or mesh faces to create jcScatter."
+							-c "jcCreateScatter"
+							createJCScatter;
+		setParent -m JCScatterParent;						
+		menuItem -label "Update Grow Mesh"
+							-tearOff 1
+							-allowOptionBoxes false
+							-subMenu true
+							-ann "Select mesh or mesh vertices to update jcPreGuide."
+							-pmc "jcFeather_rebuildUpdateScatterMenu(\"updateScatterM\",\"updateInMesh_Scatter\")"						
+							updateScatterM;	
+							
+	setParent -m jcFeatherMenu;												
+	menuItem -label "JC PreGuide"
+						-tearOff 1
+						-allowOptionBoxes true
+						-subMenu true
+						JCPGuidParent;							
+		setParent -m JCPGuidParent;	
+		menuItem -label "Create JCPreGuide"
+							-echoCommand true
+							-tearOff 1
+							-allowOptionBoxes true
+							-subMenu false
+							-ann "Select mesh or mesh vertices to create jcPreGuide."
+							-c "jcCreatePreGuid"
+							createJCPGuid;
+		setParent -m JCPGuidParent;						
+		menuItem -label "Update Grow Mesh"
+							-tearOff 1
+							-allowOptionBoxes false
+							-subMenu true
+							-ann "Select mesh or mesh faces to update jcPreGuide."
+							-pmc "jcFeather_rebuildUpdatePreGuidMenu(\"updatePreGM\",\"updateInMesh_preGuid\")"						
+							updatePreGM;	
+		setParent -m JCPGuidParent;						
+		menuItem -label "Update Guide Curves"
+							-tearOff 1
+							-allowOptionBoxes false
+							-subMenu true
+							-ann "Select nurbs curves to update jcPreGuide guide curves."
+							-pmc "jcFeather_rebuildUpdatePreGuidMenu(\"updateInCurvesG\",\"updateInCurve_preGuid\")"						
+							updateInCurvesG;
+												
+	setParent -m jcFeatherMenu;
+	menuItem -label "JC PreFeather"
+						-tearOff 1
+						-allowOptionBoxes true
+						-subMenu true
+						JCPFeatherParent;	
+		setParent -m JCPFeatherParent;	
+		menuItem -label "Create JCPreFeather"
+							-echoCommand true
+							-tearOff 1
+							-allowOptionBoxes true
+							-subMenu false
+							-ann "Select mesh or mesh faces to create JCPreFeather."
+							-c "jcCreatePreFeather"
+							createJCPFea;
+																
+		setParent -m JCPFeatherParent;
+		menuItem -label "Update Grow Mesh"
+							-echoCommand true
+							-tearOff 1
+							-allowOptionBoxes true
+							-subMenu true
+							-ann "Select mesh or mesh faces to update JCPreFeather."
+							-pmc "jcFeather_rebuildUpdatePreFeaGrowMenu(\"updateJCPFeaGrow\",\"jcUpdatePreFeaGrowMeshMenu\")"
+							updateJCPFeaGrow;
+		setParent -m JCPFeatherParent;					
+		menuItem -label "Update Instance Mesh"
+							-echoCommand true
+							-tearOff 1
+							-allowOptionBoxes true
+							-subMenu true
+							-ann "Select mesh to update JCPreFeather instance object."
+							-pmc "jcFeather_rebuildUpdatePreFeaGrowMenu(\"updateJCPFeaInstance\",\"jcUpdataPreInstance\")"
+							updateJCPFeaInstance;
+		setParent -m JCPFeatherParent;	
+		menuItem -label "Update Instance JCComponent"
+							-echoCommand true
+							-tearOff 1
+							-allowOptionBoxes true
+							-subMenu true
+							-ann "Select jcComponent node to update JCPreFeather instance component."
+							-pmc "jcFeather_rebuildUpdatePreFeaGrowMenu(\"updateJCPFeaComponent\",\"jcUpdatePreComponent\")"
+							updateJCPFeaComponent;
+		setParent -m JCPFeatherParent;			
+		menuItem -label "Update jcScatter"
+							-echoCommand true
+							-tearOff 1
+							-allowOptionBoxes true
+							-subMenu true
+							-ann "Select a jcScatter node and update jcPreFeather's scatter point data."
+							-pmc "jcFeather_rebuildUpdatePreFeaGrowMenu(\"updateJCPFeaScatter\",\"jcUpdataPreScatter\")"
+							updateJCPFeaScatter;
+		setParent -m JCPFeatherParent;	
+		
+		menuItem -label "Update jcPreGuide"
+							-echoCommand true
+							-tearOff 1
+							-allowOptionBoxes true
+							-subMenu true
+							-ann "Select a jcPreGuide and update jcPreFeather's guid."
+							-pmc "jcFeather_rebuildUpdatePreFeaGrowMenu(\"updateJCPFeaPreG\",\"jcUpdataPrePGuid\")"
+							updateJCPFeaPreG;
+		setParent -m JCPFeatherParent;	
+																	
+		menuItem -divider true;	
+		setParent -m JCPFeatherParent;
+		menuItem -label "Create JCPreController"
+							-echoCommand true
+							-tearOff 1
+							-allowOptionBoxes true
+							-subMenu false
+							-ann "Create jcPreController to control jcPreFeather."
+							-c "jcCreatePreController"
+							createJCPCon;
+		setParent -m JCPFeatherParent;
+		menuItem -label "Add Controller to PreFeather"
+							-echoCommand true
+							-tearOff 1
+							-allowOptionBoxes true
+							-subMenu true
+							-ann "Add jcPreController to a jcPreFeather."
+							-pmc "jcFeather_rebuildAddControlMenu(\"addJCPConToPF\",\"addcontrollerToPreFeather\")"
+							addJCPConToPF;
+		setParent -m JCPFeatherParent;					
+		menuItem -label "Remove Controller From PreFeather"
+							-echoCommand true
+							-tearOff 1
+							-allowOptionBoxes true
+							-subMenu true
+							-ann "Remove jcPreController from a jcPreFeather."
+							-pmc "jcFeather_rebuildAddControlMenu(\"removeJCPConToPF\",\"removecontrollerFromPreFeather\")"
+							removeJCPConToPF;																						
+	setParent -m jcFeatherMenu;	
+	
+	
+						
+    menuItem -divider true;					
+	menuItem -label "Create JCFeather System"
+						-echoCommand true
+						-tearOff 1
+						-allowOptionBoxes true
+						-subMenu false
+						-ann "Select mesh or nurbs surface to create jcFeatherSystem node."
+						-c "jcCreateFeatherSystem"
+						createJCFSys;						
+	setParent -m jcFeatherMenu;
+	
+	menuItem -label "Add Key To JCFeather System"
+						-tearOff 1
+						-allowOptionBoxes false
+						-subMenu true
+						-ann "Select jcFeather node to add to jcFeatherSystem"
+						-pmc "jcFeather_rebuildAddFeatherSystemMenu(\"addKeyToSystem\",\"jcAddToFeatherSystem\")"						
+						addKeyToSystem;	
+	setParent -m jcFeatherMenu;
+	menuItem -label "Remove Key From JCFeather System"
+						-tearOff 1
+						-allowOptionBoxes true
+						-subMenu true
+						-ann "Select jcFeather node to remove from jcFeatherSystem"
+						-pmc "jcFeather_rebuildRemoveKeyFromFeatherSystemMenu(\"removeJCFSystem\",\"jcRemoveFromFeatherSystem\")"
+						removeJCFSystem;
+						
+	setParent -m jcFeatherMenu;							
+	menuItem -divider true;
+	setParent -m jcFeatherMenu;							
+	menuItem -label "Convert Feather To Mesh"
+						-echoCommand true	
+						-tearOff 1
+						-allowOptionBoxes true
+						-subMenu false
+						-ann "Select jcFeather node to convert it to mesh."
+						-c "jcConvertFeather2Mesh;"						
+						jcConFeaToMesh;	
+	setParent -m jcFeatherMenu;
+	menuItem -label "Convert Feather To Curve"
+						-echoCommand true	
+						-tearOff 1
+						-allowOptionBoxes true
+						-subMenu false
+						-ann "Select jcFeather node to convert it to nurbsCurves."
+						-c "jcFeatherToCurves"						
+						jcConFeaToCurve;
+	setParent -m jcFeatherMenu;
+	menuItem -label "Convert Instancer To Mesh"
+						-echoCommand true	
+						-tearOff 1
+						-allowOptionBoxes true
+						-subMenu false
+						-ann "Select particle instancer to convert it to a combined mesh."
+						-c "jcInstancerToMesh"						
+						jcConInstancerToMesh;	
+	setParent -m jcFeatherMenu;																		
+	menuItem -divider true;											
+	menuItem -label "JCFeather Globals Settings..."
+						-echoCommand true	
+						-tearOff 1
+						-allowOptionBoxes true
+						-subMenu false
+						-c "select jcFeatherGlobals;"						
+						jcFGlobals;	
+	menuItem -divider true;		
+	setParent -m jcFeatherMenu;									
+	menuItem -label "Create JCFeather Shelf"
+						-tearOff 1
+						-allowOptionBoxes false
+						-subMenu false
+						-ann "Create JCFeather shelf tool bar."
+						-c "source jcFeatherScripts.mel;createJCFeatherShelf"						
+						jcFeaCreateShelf;
+	setParent -m jcFeatherMenu;
+	menuItem -label "About JCFeather"
+						-tearOff 1
+						-allowOptionBoxes true
+						-subMenu false
+						-ann "Display jcFether infomation."
+						-c "aboutJCFeather"
+						jcFeatherHelp;
+	
+}
+	
+global proc jcFeatherMenu()
+{
+	  global string $gMainWindow;
+		string $mayaMode = `setMenuMode`;
+		int $index = -1;
+	
+		if(`menu -exists jcFeatherMenu`) 
+		{
+				// Find out the current index of menu
+				string $allMenus[] = `window -q -menuArray $gMainWindow`;
+				string $menu;
+				for($menu in $allMenus) 
+				{
+					$index++;
+					if($menu == "jcFeatherMenu") 
+						break;
+				}
+				
+				deleteUI -menu jcFeatherMenu;
+		}
+	
+		setParent $gMainWindow;
+	
+		menu -label "JCFeather"
+				 -parent $gMainWindow
+			   -tearOff 1
+			   -allowOptionBoxes true
+			   jcFeatherMenu;
+		AddJCFeatherMenuItem();
+}

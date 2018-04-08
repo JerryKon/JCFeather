@@ -1,0 +1,177 @@
+global proc AEjcPreFeaTextureBrowser( string $attr )
+{
+    string $result[] = `fileDialog2 -fm 1 -fileFilter "uvi File(*.uvi)" -dialogStyle 2`;
+	setAttr $attr -type "string" $result[0];
+}
+global proc AEjcPreFeaTextureNameReplace (string $fileAttribute)
+{
+	connectControl -fileName textureNameField $fileAttribute;
+    button -e -c ("AEjcPreFeaTextureBrowser \"" + $fileAttribute + "\"" ) browser;
+}
+global proc AEjcPreFeafileTextureNameNew (string $fileAttribute)
+{
+	setUITemplate -pst attributeEditorTemplate;
+	rowLayout -nc 3 textureNameLayout;
+		text -label "UVI File";
+		textField textureNameField;
+		symbolButton -image "navButtonBrowse.xpm" browser;
+	setParent ..;
+	setUITemplate -ppt;
+	
+    AEjcPreFeaTextureNameReplace $fileAttribute;
+}
+
+global proc AEjcPreFeaUpdateUseNoise( string $nodeName )
+{
+		int $usenoise = getAttr($nodeName + ".useRotateNoise" );
+		editorTemplate -dimControl $nodeName "rotateNoiseAmplitude" ($usenoise == 0);
+		editorTemplate -dimControl $nodeName "rotateNoiseFrequency" ($usenoise == 0);	
+		editorTemplate -dimControl $nodeName "rotateNoisePhase" ($usenoise == 0);								
+		
+}
+//---------------------------------
+global proc AEjcPreFeaGuideNew (string $fileAttribute)
+{
+	setUITemplate -pst attributeEditorTemplate;
+	rowLayout -nc 3 textureNameLayout;
+		text -label "Guide File";
+		textField textureNameField;
+		symbolButton -image "navButtonBrowse.xpm" browser;
+	setParent ..;
+	setUITemplate -ppt;
+	
+    AEjcPreFeaGuideReplace $fileAttribute;
+}
+global proc AEjcPreFeaGuideReplace (string $fileAttribute)
+{
+	connectControl -fileName textureNameField $fileAttribute;
+    button -e -c ("AEjcPreFeaGuideDialog \"" + $fileAttribute + "\"" ) browser;
+}
+global proc AEjcPreFeaGuideDialog( string $attr )
+{
+    string $result[] = `fileDialog2 -fm 1 -fileFilter "Guide File(*.vd)" -dialogStyle 2`;
+	setAttr $attr -type "string" $result[0];
+}
+//---------------------------------
+
+//---------------------------------
+global proc AEjcPreFeaScatterNew (string $fileAttribute)
+{
+	setUITemplate -pst attributeEditorTemplate;
+	rowLayout -nc 3 textureNameLayout;
+		text -label "Scatter File";
+		textField textureNameField;
+		symbolButton -image "navButtonBrowse.xpm" browser;
+	setParent ..;
+	setUITemplate -ppt;
+	
+    AEjcPreFeaScatterReplace $fileAttribute;
+}
+global proc AEjcPreFeaScatterReplace (string $fileAttribute)
+{
+	connectControl -fileName textureNameField $fileAttribute;
+    button -e -c ("AEjcPreFeaScatterDialog \"" + $fileAttribute + "\"" ) browser;
+}
+global proc AEjcPreFeaScatterDialog( string $attr )
+{
+    string $result[] = `fileDialog2 -fm 1 -fileFilter "scatter File(*.st)" -dialogStyle 2`;
+	setAttr $attr -type "string" $result[0];
+}
+//---------------------------------
+
+global proc AEjcPreFeatherUpdateBendMode( string $nodeName )
+{
+		int $activeBnd = getAttr($nodeName + ".activeBend" );
+		editorTemplate -dimControl $nodeName "bendPosition" ($activeBnd == 0 );
+		editorTemplate -dimControl $nodeName "bendCurvature" ($activeBnd == 0);	
+		editorTemplate -dimControl $nodeName "bendRandCurvature" ($activeBnd == 0);
+}
+global proc AEjcPreFeatherTemplate( string $nodeName )
+{
+
+	editorTemplate -beginScrollLayout;
+		editorTemplate -beginLayout "Transform Properties"  -collapse 0;
+			editorTemplate -addControl "active";
+													
+			editorTemplate -addSeparator;								
+			editorTemplate -addControl "globalScale";
+			editorTemplate -addControl "randScale";
+			
+			editorTemplate -addSeparator;
+			editorTemplate -addControl "interactiveScale";
+			editorTemplate -callCustom "AEjcPreFeatherScaleTexParmNew" "AEjcPreFeatherScaleTexParmReplace" "scaleTexture";				
+			
+			editorTemplate -addSeparator;
+			editorTemplate -addControl "rotateOffset";
+			editorTemplate -addControl "useRotateNoise" "AEjcPreFeaUpdateUseNoise";
+			editorTemplate -addControl "rotateNoiseFrequency";
+			editorTemplate -addControl "rotateNoiseAmplitude";	
+			editorTemplate -addControl "rotateNoisePhase";
+			editorTemplate -addControl "rotateOrder";
+			
+			editorTemplate -addSeparator;
+			editorTemplate -addControl "randSeed";	
+			editorTemplate -addControl "uvSetName";						
+		editorTemplate -endLayout;
+		
+		editorTemplate -beginLayout "Deform Properties"  -collapse 1;	
+			editorTemplate -addControl "activeBend" "AEjcPreFeatherUpdateBendMode";
+			editorTemplate -addControl "bendPosition";
+			editorTemplate -addControl "bendCurvature";
+			editorTemplate -addControl "bendRandCurvature";		
+		
+		editorTemplate -endLayout;	
+		
+		editorTemplate -beginLayout "Disk Data Files"  -collapse 1;	
+			editorTemplate -callCustom "AEjcPreFeaGuideNew" 
+										"AEjcPreFeaGuideReplace" 
+										"guideFile";
+			editorTemplate -callCustom "AEjcPreFeaScatterNew" 
+										"AEjcPreFeaScatterReplace" 
+										"scatterFile";
+		editorTemplate -endLayout;	
+		
+	editorTemplate -beginLayout (uiRes("m_AElocatorTemplate.kLocatorAttributes")) -collapse 1;
+    AElocatorCommon $nodeName;
+    editorTemplate -endLayout;
+    {
+		editorTemplate -suppress "motionBlur";
+		editorTemplate -suppress "visibleInReflections";
+		editorTemplate -suppress "visibleInRefractions";
+		editorTemplate -suppress "maxVisibilitySamplesOverride";
+		editorTemplate -suppress "maxVisibilitySamples";
+		editorTemplate -suppress "geometryAntialiasingOverride";
+		editorTemplate -suppress "antialiasingLevel";
+		editorTemplate -suppress "shadingSamplesOverride";
+		editorTemplate -suppress "shadingSamples";
+		editorTemplate -suppress "maxShadingSamples";
+		editorTemplate -suppress "volumeSamplesOverride";
+		editorTemplate -suppress "volumeSamples";
+		editorTemplate -suppress "depthJitter";
+		editorTemplate -suppress "ignoreSelfShadowing";
+		editorTemplate -suppress "primaryVisibility";
+		editorTemplate -suppress "compInstObjGroups";
+		editorTemplate -suppress "castsShadows";
+		editorTemplate -suppress "receiveShadows";	
+    }
+
+    AEshapeTemplate $nodeName;
+    
+    
+	editorTemplate -addExtraControls;
+	editorTemplate -endScrollLayout;
+}
+
+global proc AEjcPreFeatherScaleTexParmNew (string $attrName)
+{
+	attrNavigationControlGrp 
+		-l "Scale Map"
+		-at $attrName
+		"jcPreScaleTexGrp";
+}
+global proc AEjcPreFeatherScaleTexParmReplace (string $attrName)
+{
+	attrNavigationControlGrp -edit
+		-at $attrName
+		"jcPreScaleTexGrp";
+}

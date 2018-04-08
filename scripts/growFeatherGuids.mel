@@ -1,0 +1,1528 @@
+/*
+Jerry Kon jcGrowFeatherGuids tools.
+This script is used to make feather guids on object.
+There are many ways to grow feather on objects in this script.
+Visit www.jerrykon.com to get toturials of this script.
+
+2012.10.11 remove lots of features in the last version.They are not useful for making feathers.
+*/
+
+
+global string $updateFeatherObjs[];
+global string $pointsToGrowOn[];
+global string $FeatherGuidCurves[];
+
+//对输入的数组进行排序得到最小到最大的值得id排列
+global proc getSortID(float $dist[],int $idArray[],int $l,int $r)
+{
+	int $i,$j,$xid;
+	float $x;
+
+	if ($l < $r)    
+	{	
+		$i=$l;
+		$j=$r;
+		$x=$dist[$i];
+		$xid = $idArray[$i];
+		
+		while($i < $j)
+		{
+			while($i < $j && $dist[$j]> $x) 
+	     		$j--; /* 从右向左找第一个小于x的数 */
+	     	if($i<$j)
+	     	{
+		     	$idArray[$i]=$idArray[$j];
+		     	$dist[$i]= $dist[$j];
+		     	$i++;
+		    }  
+		   	while($i < $j && $dist[$i] < $x) 
+		     	$i++;  /* 从左向右找第一个大于x的数 */ 
+		    if($i < $j)      
+		     {      
+			      $idArray[$j]=$idArray[$i];    
+			      $dist[$j] = $dist[$i];       
+			      $j--;   
+			 }     
+		}
+	
+		$idArray[$i] = $xid;     
+	    $dist[$i] = $x;
+	
+	    getSortID($dist, $idArray,$l, $i-1); /* 递归调用 */     
+	    getSortID($dist, $idArray,$i+1, $r); 
+	}
+}
+global proc int testDistance(vector $p[],vector $p1[],vector $testP,float $dist)
+{
+	for($pp in $p)
+		if( mag($pp-$testP)<$dist )
+			return 0;
+	for($pp in $p1)
+		if( mag($pp-$testP)<$dist )
+			return 0;	
+	return 1;
+}
+	
+//在给定模型的三个顶点上随机算出一定数量的点，并返回点的位置数据
+proc vector[] randomPosInTriangle(string $obj, int $v0, int $v1, int $v2, int $local,int $posNum,float $minDist,vector $Pts[],int $tryNo)
+{
+	vector $a,$b,$c,$storePos[],$tempV;
+	if($local){
+	$a = `pointPosition -local ($obj + ".vtx[" + $v0 + "]")`;
+	$b = `pointPosition -local ($obj + ".vtx[" + $v1 + "]")`;
+	$c = `pointPosition -local ($obj + ".vtx[" + $v2 + "]")`;
+	}else{
+	$a = `pointPosition -world ($obj + ".vtx[" + $v0 + "]")`;
+	$b = `pointPosition -world ($obj + ".vtx[" + $v1 + "]")`;
+	$c = `pointPosition -world ($obj + ".vtx[" + $v2 + "]")`;
+	}
+	
+	int $i=0;
+	float $aa,$bb,$cc;
+	for(;$i<$posNum;$i++)
+	{
+		int $k=0;
+		while($k<$tryNo)
+		{
+			$aa = rand(0,1);
+			$bb = rand(0,1);
+			if(($aa+$bb)>=1.0){ $aa=1-$aa;$bb=1-$bb;}
+			$cc=1-$aa-$bb;
+			$tempV = $aa *$a +$bb *$b +$cc *$c;
+			$k++;
+			if(testDistance($storePos,$Pts,$tempV,$minDist))
+				break;
+		}
+		$storePos[$i] = $tempV;
+	}
+	return $storePos;
+}
+//在所给定的面上按照单位面积应有的点数计算出所有的点的位置,如果测试的三角面的面积小于1则对它的面积进行一定的缩放。
+global proc vector[] faceRandomPoints(string $sel[],int $local,float $numPerArea,float $minRadius,int $tryNum,int $maxPerTr,float $scaleArea)
+{
+	if(!`size $sel`)error "Give me a poly face";
+	vector $result[],$tempResult[];clear $result;clear $tempResult;
+	float $a[], $b[], $c[],$area;
+	string $verts[];
+	string $polyData[],$name[];
+	float $realNum=0;
+	for($i=0;$i<`size $sel`;++$i){
+		$polyData =`polyInfo -faceToVertex $sel[$i]`;
+		tokenize $polyData[0] $verts;
+		tokenize $sel[$i] "." $name;
+		for($j=3;$j<(`size $verts`- 1);++$j){
+			$area = pkVertexVectorArea($name[0],$verts[2],$verts[$j],$verts[$j+1],$local);
+			$realNum = $numPerArea*$area;
+			if($realNum<1) $realNum = $numPerArea*$area*$scaleArea;
+			if($maxPerTr>0&&$realNum>$maxPerTr) $realNum=$maxPerTr;
+			$tempResult = randomPosInTriangle($name[0],$verts[2],$verts[$j],$verts[$j+1],$local,(int)$realNum,$minRadius,$result,$tryNum);
+			for($v in $tempResult)
+				$result[`size $result`] = $v;
+		}
+	}
+	return $result;
+}
+//------------------------算出三个点组成的三角形的面积
+global proc float pkVertexVectorArea(string $obj, int $v0, int $v1, int $v2, int $local)
+{
+	float $a[], $b[], $c[];
+	//get vertex world positions
+	if($local){
+	$a = `pointPosition -local ($obj + ".vtx[" + $v0 + "]")`;
+	$b = `pointPosition -local ($obj + ".vtx[" + $v1 + "]")`;
+	$c = `pointPosition -local ($obj + ".vtx[" + $v2 + "]")`;
+	}else{
+	$a = `pointPosition -world ($obj + ".vtx[" + $v0 + "]")`;
+	$b = `pointPosition -world ($obj + ".vtx[" + $v1 + "]")`;
+	$c = `pointPosition -world ($obj + ".vtx[" + $v2 + "]")`;
+	}
+	//compute components of cross product
+	float $vx = ($b[1]-$a[1])*($c[2] - $a[2]) - ($b[2]-$a[2])*($c[1] - $a[1]);
+	float $vy = ($b[2]-$a[2])*($c[0] - $a[0]) - ($b[0]-$a[0])*($c[2] - $a[2]);
+	float $vz = ($b[0]-$a[0])*($c[1] - $a[1]) - ($b[1]-$a[1])*($c[0] - $a[0]);
+	vector $v = <<$vx,$vy,$vz>>;
+	//get magnitude of cross product vector
+	float $mag = `mag $v`;
+	float $area = 0.5 * $mag;
+	return $area;
+}
+
+//----------------------给出一组多边形的面，算出总的面积
+global proc float pkFaceArea(string $sel[],int $local)
+{
+	//string $sel[] =`ls -sl -fl`;
+	if(!`size $sel`)error "Give me a poly face";
+	float $result = 0.0;
+	float $a[], $b[], $c[];
+	for($i=0;$i<`size $sel`;++$i){
+		string $polyData[] =`polyInfo -faceToVertex $sel[$i]`;
+		string $verts[];
+		tokenize $polyData[0] $verts;
+		string $name[];
+		tokenize $sel[$i] "." $name;
+		float $area;
+		for($j=3;$j<(`size $verts`- 1);++$j){
+			$area = pkVertexVectorArea($name[0],$verts[2],$verts[$j],$verts[$j+1],$local);
+			$result += $area;
+		}
+	}
+	return $result;
+}
+global proc setMyNewMatrix(string $obj,vector $foward,vector $right)
+{
+	string $pythonCmd="nu.setNewDirection(\'"+$obj+"\',"+($foward.x)+","+($foward.y)+","+($foward.z)+","+($right.x)+","+($right.y)+","+($right.z)+")";
+	python($pythonCmd);
+	}
+global proc float[] getNearestPoinOC(string $obj,vector $point)
+{
+	string $pythonCmd="nu.getNearestPointOnCurve(\'"+$obj+"\',"+($point.x)+","+($point.y)+","+($point.z)+")";
+	string $resultStr=python($pythonCmd);
+	string $buffer[];
+	tokenize $resultStr $buffer;
+	float $result[];
+	$result[0]=(float)$buffer[0];
+	$result[1]=(float)$buffer[1];	
+	$result[2]=(float)$buffer[2];
+	$result[3]=(float)$buffer[3];
+	$result[4]=(float)$buffer[4];
+	$result[5]=(float)$buffer[5];	
+	$result[6]=(float)$buffer[6];	
+	return $result;
+	}
+///---------------------------------------------------------------------------以上是数学算法，--------------------------------------////////
+
+
+//---------使曲线沿着一个向量旋转一定的角度	
+global proc rotateCurveAlongVector(string $curve,vector $rightDir,float $radDegree)
+{
+	int $spans=`getAttr ($curve+".spans")`;
+	int $ll=1;
+	string $pcmd="";
+	vector $startPos=`pointPosition -w ($curve+".cv[0]")`;
+	
+	for(;$ll<=$spans;$ll++)
+	{	
+		
+	    vector $rcPos=`pointPosition -w ($curve+".cv["+($ll-1)+"]")`;
+		vector $newPos = `pointPosition -w ($curve+".cv["+$ll+"]")`;
+		vector $tangent=$newPos-$startPos;
+		$pcmd = "nu.myRotateVector("+$radDegree+","+$rightDir.x+","+$rightDir.y+","+$rightDir.z+","+$tangent.x+","+$tangent.y+","+$tangent.z+")";
+		
+ 		string $result=python($pcmd);
+
+ 		string $newVec[] = stringToStringArray($result, " ");
+ 		vector $finalPos=$startPos+ unit(<<(float)$newVec[0],(float)$newVec[1],(float)$newVec[2]>>)*mag($newPos-$startPos);
+ 		
+ 		setAttr ($curve+".cv["+$ll+"]") ($finalPos.x) ($finalPos.y) ($finalPos.z);
+	 }
+}
+//------------------------------------------------
+//-----------------------------------------得到最近点的法线
+global proc vector getClosestNormal(string $clSearNode)
+{
+	vector $normal;
+	if(`nodeType $clSearNode`== "closestPointOnMesh")
+	{
+		$normal = `getAttr ($clSearNode+".normal")`;
+		}
+	if(`nodeType $clSearNode`== "closestPointOnSurface")
+	{
+		string $surfaceShape[]=`listConnections -d 1 -sh 1 ($clSearNode+".inputSurface")`;
+		float $pu=`getAttr ($clSearNode+".parameterU")`;
+		float $pv=`getAttr ($clSearNode+".parameterV")`;
+		
+		$normal=`pointOnSurface -u $pu -v $pv -nn  $surfaceShape[0]`;
+	}
+	return $normal;
+}
+//-------------------------------------------得到最近点UV
+global proc float[] getClosestUVFromNode(string $clSearNode)
+{
+	float $uv[];
+	$uv[0]=`getAttr ($clSearNode+".parameterU")`;
+	$uv[1]=`getAttr ($clSearNode+".parameterV")`;
+	return $uv;
+	}
+//----------------------------给我数据   (所有的曲线名称，要长的羽毛模型，曲线最近点节点,查找最近点的节点,向上旋转的度数),插值物体方向
+global proc growAlongCurve(string $curveShape[],string $featherObj,string $closestSearchNode)
+{	
+	vector $fobjPos = `xform -q -rp -ws $featherObj`;
+					
+	vector $tangentArray[];
+	float $distArray[];
+	float $uparamArray[];
+	clear $tangentArray;
+	clear $distArray;	
+	clear $uparamArray;
+	
+	float $maxRadius=`floatFieldGrp -q -value1 searchRadius`;//得到设定的寻找范围
+    float $powerP=`floatFieldGrp -q -value1 powerParam`;//得到power值
+    float $curveInfo[];
+	for($cShape in $curveShape)
+	{	
+		$curveInfo = getNearestPoinOC($cShape,$fobjPos);
+			
+		vector $outPos=<<$curveInfo[0],$curveInfo[1],$curveInfo[2]>>;
+		vector $tangent = <<$curveInfo[3],$curveInfo[4],$curveInfo[5]>>;
+		float $uParam=$curveInfo[6];
+		
+		vector $dir = $outPos - $fobjPos;
+		float $dist = mag($dir);	
+		
+		if($dist<=$maxRadius)
+		{
+			$tangentArray[`size $tangentArray`] = $tangent;//存储切线方向
+			$distArray[`size $distArray`] = $dist;//存储最近点距离
+			$uparamArray[`size $uparamArray`] = $uParam;
+		}
+	}
+	
+	//-----------------------------------------------------------------------------
+	//-----------------------------------------------------------------------------	
+	//准备好id的数组
+	int $sizeDist=`size $distArray`;
+	int $k=0,$sortedID[];
+	clear $sortedID;
+	for(;$k<$sizeDist;$k++)
+		$sortedID[$k]=$k;
+
+	getSortID($distArray,$sortedID,0,$sizeDist-1);//将距离从小到大排列然后将顺序的id号输出结果
+
+	int $i=0;
+	int $useNo=`intFieldGrp -q -value1 useCurveNo`;
+	if($useNo>$sizeDist) //如果规定使用的曲线太多，则用数组本身的数量
+	   $useNo = $sizeDist;
+	
+    int $index=0;
+    vector $resultDirection=<<0,0,0>>;
+    vector $resultNormal=<<0,0,0>>;
+    float $interPower=0;
+	for(;$i<$useNo;$i++)//插值计算出每个curve的权重得到合适的tangent和normal
+	{
+		$index = $sortedID[$i];//得到从小到大排序的id号
+		$interPower = exp(-$powerP*$powerP*$distArray[$i]*$distArray[$i]);
+		$resultDirection += $interPower*$tangentArray[$index];
+	}
+	if($i==0||$useNo==1)//如果在所限定的距离内都没有找到一根曲线，则用最近的曲线的tangent
+		$resultDirection = $tangentArray[$sortedID[0]];
+	//-----------------------------------------------------------------------------
+	//-----------------------------------------------------------------------------
+	$resultDirection = unit($resultDirection);
+	
+	$resultNormal=getClosestNormal($closestSearchNode);//得到最近点的法线方向
+	vector $rightV=cross($resultDirection,$resultNormal);//通过切线方向和法线方向得到向右的方向	
+	
+	//要根据这个切线和最近点法线算出生长点朝右的方向的矢量用来旋转
+	//--------添加在这里
+	setMyNewMatrix($featherObj,$resultDirection,$rightV);
+}
+
+global proc vector[] getUpdatePositions(string $objs[])
+{
+	vector $result[];
+	clear $result;
+	for($o in $objs)
+		 $result[`size $result`] =`xform -q -ws -rp $o`;
+	return  $result;
+	}
+
+//---------------------------------------通过毛囊来得到uv点的世界坐标	
+global proc vector getPointFromUV(vector $uv,string $follicle)
+{
+	string $fs[]=`listRelatives -s -f $follicle`;
+	setAttr ($fs[0]+".parameterU") ($uv.x);
+	setAttr ($fs[0]+".parameterV") ($uv.y);
+	vector $pos=`getAttr ($follicle+".translate")`;
+	if(!`getAttr ($fs[0]+".vuv")`)
+	return $pos;
+	}
+	
+//---------------------------------------如果是多边形则会创建一个毛囊进来进行uv定位位置
+global proc vector[] getUVModeGrownPositions(string $follicle)
+{
+	string $growOnObj = `textFieldButtonGrp -q -text getGrowOnSurface`;
+	int $usegs=`intFieldGrp -q -value1 uDirNumFeather`;
+	int $vsegs=`intFieldGrp -q -value1 vDirNumFeather`;	
+	float $uvRandomsS=`floatFieldGrp -q -value1 uvRandomSize`;
+	float $uvRandomsF=`floatFieldGrp -q -value1 uvRandomFrequency`;	
+	int $useUBrick=`checkBoxGrp  -q -v1 brickFeatherCheck`;	
+	int $useVBrick=`checkBoxGrp  -q -v2 brickFeatherCheck`;	
+	
+	string $fs[];
+	if($follicle!="")
+		$fs=`listRelatives -s -f $follicle`;
+		    				    				
+	vector $uvs[],$tempvect;
+	int $ii=0,$kk=0;
+	float $tempu,$tempv,$dist;
+	float $moveU=1.0/(float)($usegs-1),$moveV=1.0/(float)($vsegs-1);
+	int $ubc=0,$vbc=0;
+	for(;$ii<$usegs;$ii++)
+	{
+		$vbc=!$vbc;
+		for($kk=0;$kk<$vsegs;$kk++)
+		{
+			$ubc = !$ubc;
+			$tempu=(float)$ii*$moveU;
+			$tempv=(float)$kk*$moveV;
+			$dist = rand(0,$uvRandomsS);
+			vector $randomDir =$dist * unit(dnoise(<<$ii*$uvRandomsF,$kk*$uvRandomsF,0>>));
+			$tempvect = <<$tempu,$tempv,0>> + $randomDir;
+			
+			if($useUBrick&&$ubc) $tempvect = <<$tempvect.x+$moveU*0.5,$tempvect.y,0>>;
+			if($useVBrick&&$vbc) $tempvect = <<$tempvect.x,$tempvect.y +$moveV*0.5,0>>;
+				
+			if($tempvect.x>=0&&$tempvect.x<=1&&$tempvect.y>=0&&$tempvect.y<=1)
+			{
+				float $col[]=getTextureColor({$tempvect.x,$tempvect.y},"bald");
+				if( rand(0,1)>( 1 - ($col[0]+$col[1]+$col[2])/3.0 ) )
+				{
+					if($follicle=="")//毛囊为空则代表要长在nurbs面片						
+						$uvs[`size $uvs`] = `pointOnSurface -top 1 -u ($tempvect.x) -v ($tempvect.y) -position $growOnObj`;
+					else//通过毛囊和uv来得到该uv位置上的位置
+					{
+						setAttr ($fs[0]+".parameterU") ($tempvect.x);
+						setAttr ($fs[0]+".parameterV") ($tempvect.y);
+						if(`getAttr ($fs[0]+".vuv")`)
+							$uvs[`size $uvs`]=`getAttr ($follicle+".translate")`;
+					}
+				}
+			}
+		}
+	}
+	if($follicle!="") delete $follicle;
+	return $uvs;
+}
+
+//--------------------------------------贴图越亮越容易生长
+global proc vector[] getMeshBaldPos(string $cpomNode,vector $pos[])
+{
+	vector $testPos;
+	vector $result[];
+	float $uvV[2],$color[];
+	for($v in $pos)	
+	{
+		setAttr ($cpomNode+".inPositionX") ($v.x);
+		setAttr ($cpomNode+".inPositionY") ($v.y);
+		setAttr ($cpomNode+".inPositionZ") ($v.z);
+		
+		$uvV[0]=`getAttr ($cpomNode+".parameterU")`;
+		$uvV[1]=`getAttr ($cpomNode+".parameterV")`;	
+		$color=getTextureColor($uvV,"bald");
+		vector $hsvValue=rgb_to_hsv(<<$color[0],$color[1],$color[2]>>);
+		if( rand(0,1)>( 1 - $hsvValue.z ) )
+			$result[`size $result`] = $v;
+	}
+	return $result;
+}
+
+//---------------------------------------得到生长的点的位置数组,只适应于多边形,按照多边形面的面积来计算
+global proc vector[] getGrownPositions()
+{
+	int $totalNum=`intFieldGrp -q -value1 ExactNumF`; 
+	int $intPerAreaNum=`intFieldGrp -q -value1 noPerArea`; 
+	float $perAreaNum=(float)$intPerAreaNum;
+	int $maxNum=`intFieldGrp -q -value1 maxNumFeather`; 	
+	int $feaGuidMode=`radioButtonGrp -q -select growFeatherGuidMode`;
+	float $feaRs=`floatFieldGrp -q -value1 feaRadiusScale`;	
+	float $scaleAreaIf0=`floatFieldGrp -q -value1 scaleAreaIfNumZero`;		
+	int $tryTimes=`intFieldGrp -q -value1 tryNumsField`;
+	int $maxPerTria=`intFieldGrp -q -value1 maxNumPerTriangle`;	
+		
+	string $growOnObj=`textFieldButtonGrp -q -text getGrowOnSurface`;
+	string $polyFaces[];
+	int $growObjType=0;
+	float $totalArea=0;
+	vector $allPosition[];
+	if(`nodeType $growOnObj`=="objectSet") 
+	{
+		$growObjType=0;
+		select -r $growOnObj;
+		$polyFaces=`ls -fl -selection`;
+		$totalArea = pkFaceArea($polyFaces,0);
+	}
+	else if(`nodeType $growOnObj`=="mesh")
+	{
+		$growObjType=1;
+		float $a[]=`polyEvaluate -wa $growOnObj`;
+		$totalArea =  $a[0];
+		int $fn[]=`polyEvaluate -f $growOnObj`;
+		int $faceNo=$fn[0];
+		int $i=0;
+		for(;$i<$faceNo;$i++)
+			$polyFaces[$i] = ($growOnObj+".f["+$i+"]");
+	}
+	else if(`nodeType $growOnObj`=="nurbsSurface")
+	{
+		$growObjType=2;
+		}
+		
+	if($feaGuidMode==1) 
+		$perAreaNum = (float)$totalNum/$totalArea;//算出实际单位面积上生长的羽毛的个数
+	else if($feaGuidMode==2) 
+	{
+ 		if( $maxNum>0 && ($totalArea * $perAreaNum) > $maxNum )
+ 			$perAreaNum = (float)$maxNum/$totalArea;
+	}
+	
+	if($growObjType!=2)
+		$allPosition = faceRandomPoints($polyFaces,0,$perAreaNum,$feaRs,$tryTimes,$maxPerTria,$scaleAreaIf0);
+		
+		
+	//这里要添加
+	return $allPosition;
+	}
+	
+global proc selectParticleInIDField()
+{
+	global string $pointsToGrowOn[];
+	if(`size $pointsToGrowOn`==0) error "jcFeather : No Points to grown.";
+	select -r $pointsToGrowOn;
+	}
+	
+// 用nparticle
+global proc vector[] getPositionFromParticle()
+{
+	global string $pointsToGrowOn[];
+	vector $result[];
+	for($pt in $pointsToGrowOn)
+		$result[`size $result`] = `pointPosition $pt`;
+	return $result;	
+}
+//-------------用一系列点来创建粒子
+global proc genParticleWith(vector $pos[])
+{
+	float $feaRs=`floatFieldGrp -q -value1 feaRadiusScale`;	
+	string $particleCmd="particle ";
+	for($v in $pos)
+	{
+		$particleCmd+="-p ";
+		$particleCmd+=$v.x;
+		$particleCmd+=" ";
+		$particleCmd+=$v.y;
+		$particleCmd+=" ";
+		$particleCmd+=$v.z;
+		$particleCmd+=" ";
+		}
+		
+	$particleCmd +="-c 1";
+	string $particleView[] = eval($particleCmd);
+	if(`size $particleView`>1)
+	{
+		setAttr ($particleView[1]+".particleRenderType") 4;
+		addAttr -is true -ln "radius" -at "float" -min 0 -max 10 -dv 0.5 $particleView[1];
+		setAttr ($particleView[1]+".radius") $feaRs;
+		}
+}
+	
+//----------将uv信息写出去
+//----------写出的文件是二进制文件,头一个为整数代表uv点的数量，此后为uv数据
+//----------比如: 3(3个点) 1(有没有faceID)    0 1 2    0.1 0.12 0.1 0.5 0.3 0.33,该例子有3个uv数据，分别为{0.1,0.12}  {0.1,0.5}  {0.3,0.33},他们最近点的面为0 1 2 
+//----------3 0 0.1 0.12 0.1 0.5 0.3 0.33，其中 0代表没有faceID,这种情况是在nurbsSurface情况下出现
+//----------该文件用途主要是为了在jcFeatherSystem中使用
+global proc writeUVDateTo(string $file,vector $uvfid[])
+{
+	int $uvNum=`size $uvfid`;
+	if($uvNum<=0) error "No uv data to write.";
+	
+	$fileId=`fopen $file "w"`;
+	fwrite $fileId $uvNum;
+	
+	//----------------------是否有faceIndex,有的话写出去，没有则跳过
+	vector $tempV=$uvfid[0];
+	if($tempV.x<0) fwrite $fileId 0;//0代表没有faceIndex
+	else 
+	{
+		fwrite $fileId 1;//1代表有faceIndex
+		int $i=0;
+		int $fid;
+		for(;$i<$uvNum;$i++)
+		{
+			$tempV = $uvfid[$i];
+			$fid=(int)($tempV.z);
+			fwrite $fileId $fid;
+		}
+	}
+	//----------------------写出uv信息
+	int $i=0;
+	for(;$i<$uvNum;$i++)
+	{
+		$tempV = $uvfid[$i];
+		fwrite $fileId ($tempV.x);
+		fwrite $fileId ($tempV.y);
+	}
+	fclose $fileId;
+	print ("jcFeather: Write "+$uvNum+" points to uvi file "+$file+" "+".\n");
+}
+//----------------------------------------------将uv文件信息读入内存返回一vector数组，<<u,v,faceId>>;
+global proc vector[] readUVDataFromFile(string $file)
+{
+	int $uvNum=0,$fid=0;;
+	vector $result[],$tempV;
+	float $tempf,$tempAllV[];
+	int $faceID[],$tempInt;
+	
+	$fileId=`fopen $file "r"`;
+	$uvNum=`fread $fileId $uvNum`;
+	$fid=`fread $fileId $fid`;
+	
+	if($fid==1)
+	{
+		int $i=0;
+		for(;$i<$uvNum;$i++)
+			$faceID[$i]=`fread $fileId $tempInt`;
+	}
+	
+	int $i=0;
+	for(;$i<$uvNum*2;$i++)
+		$tempAllV[$i]=`fread $fileId $tempf`;
+		
+	clear $result;
+	for($i=0;$i<(($uvNum*2)-1);$i+=2)
+		$result[`size $result`]=<<$tempAllV[$i],$tempAllV[$i+1],-1>>;
+					
+	if($fid==1)
+	{
+		int $j=0;
+		vector $ttv;
+		for(;$j<$uvNum;$j++)
+		{
+			$ttv = $result[$j];
+			$result[$j] = <<$ttv.x,$ttv.y,$faceID[$j]>>;
+		}
+	}
+	fclose $fileId;
+	return $result;
+}
+
+global proc writeParticleToUVI()
+{
+	string $sel[]=`ls -fl -sl`;
+	vector $allPoses[];
+	
+	for($s in $sel)
+		$allPoses[`size $allPoses`]=`pointPosition -w $s`;
+
+	if(`size $allPoses`==0) 
+		error "jcFeather: No particle position to write.";
+
+	string $uvDataFile=`textFieldButtonGrp -q -text browseUVPath`;
+	string $uvDataN=`textFieldGrp -q -text uvInfoFileField`;
+	$uvDataFile += $uvDataN;
+	$uvDataFile += ".uvi";
+	string  $growOnObj=`textFieldButtonGrp -q -text getGrowOnSurface`;
+	if($growOnObj=="") error "No Object in Grow On Field.";
+	
+	//-------将距离位置的最近点的uv信息获得，然后写出文件
+	vector $resultUVID[];
+	vector $tempUV;
+	string $cpom=createCPOM($growOnObj);
+	for($p in $allPoses)
+	{
+		$tempUV = feaGetClosestUV($cpom,{$p.x,$p.y,$p.z});
+		$resultUVID[`size $resultUVID`] = $tempUV;
+	}
+	
+	writeUVDateTo($uvDataFile,$resultUVID);
+	delete $cpom;
+}
+
+//------------------执行生长，更新，粒子显示，曲线显示	
+global proc doGrowFeatherGuid(int $grow_update)//该值为0时为生长，为1时更新,-1时进行粒子显示，-2时进行曲线显示
+{
+	global string $FeatherGuidCurves[];
+	string $allFeathers[]=getAllGuidFeathers();//得到所有的羽毛模板
+	string $allCurveShapes[]=$FeatherGuidCurves;
+	int $feaTemplateNum=`size $allFeathers`;
+	int $curveSize=`size $allCurveShapes`;
+	
+	if($allFeathers[0]==""&&($grow_update==0||$grow_update==1)) error "No feather Template.";
+	if($allCurveShapes[0]==""&&($grow_update==0||$grow_update==1)) error "No Guided curves.";
+	
+	string  $growOnObj=`textFieldButtonGrp -q -text getGrowOnSurface`;
+	if($growOnObj=="") error "No Object in Grow On Field.";
+	
+	float $feaScaleV[]=`floatFieldGrp -q -value feaScaleField`;
+    float $feaScaleRanV[]=`floatFieldGrp -q -value feaScaleRandomField`;						    
+    float $feaRotateV[]=`floatFieldGrp -q -value feaRotateield`;
+    float $feaRotateRanV[]=`floatFieldGrp -q -value feaRotateRandomField`;
+						    	
+	int $copy_instance=`radioButtonGrp -q -select duplicateGuidMode`; 	
+	int $polyAreaUV=`radioButtonGrp  -q -select growPolyUVGuidMode`;	
+	int $seed =`intFieldGrp -q -value1 randomSeedField`;
+ 	int $subds[]=`intFieldGrp -q -v subdivisionField`;
+ 	int $widthDivision=$subds[0],$lengthDivision=$subds[1];
+	float $lengthStep = 1.0/((float)$lengthDivision-1);
+	
+	seed($seed);
+	
+	//-----------------------------创建用来查找最近点的closestPointOnMesh或者closestPointOnSurface
+	string  $cpom=createCPOM($growOnObj);
+	string $follicT="";
+	if(`nodeType  $growOnObj`=="mesh" || `nodeType $growOnObj`=="objectSet")
+	{
+		if(`nodeType $growOnObj`=="objectSet")
+		{
+			select -r $growOnObj;
+			string $s[]=`ls -fl -sl`;
+			string $name[];
+			tokenize $s[0] "." $name;
+			if(`nodeType $name[0]`=="mesh") 
+				$growOnObj=$name[0];
+			else
+			{
+				string $k[]=`listRelatives -f -s $name[0]`;
+				if(`size $k`!=0&&`nodeType $k[0]`=="mesh") $growOnObj=$k[0];
+			}
+		}
+		
+		$follicT = `createNode "transform" -n "follicle#"`;	
+		string $follicN = `createNode "follicle" -p $follicT`;
+		connectAttr ($growOnObj+".worldMatrix") ($follicN+".inputWorldMatrix");
+		connectAttr ($growOnObj+".worldMesh") ($follicN+".inputMesh");
+		connectAttr ($follicN+".outRotate") ($follicT+".rotate");
+		connectAttr ($follicN+".outTranslate") ($follicT+".translate");
+	}
+	//------------------------------
+	
+	vector $allPoses[];
+	string $updateFeather[];
+	global string $updateFeatherObjs[];
+	if($grow_update==0||$grow_update==-1||$grow_update==-2)//生长，粒子显示，曲线显示
+	{
+		if( `nodeType  $growOnObj`=="nurbsSurface" && $polyAreaUV!=3)//利用uv生长的适应于多边形和nurbs面片
+		{
+			if($polyAreaUV==1) 
+				warning "Nurbs Surface doesn't support Area Mode, Use UV Mode.";
+			tabLayout -edit -selectTab uvColum positionMode;
+			$allPoses = getUVModeGrownPositions("");
+		}
+		else if( $polyAreaUV==2&&`nodeType  $growOnObj`!="nurbsSurface" )
+			$allPoses = getUVModeGrownPositions($follicT);
+		else if( $polyAreaUV==1 && `nodeType  $growOnObj`!="nurbsSurface" )
+		{		
+			$allPoses = getGrownPositions();
+
+		}
+		else if($polyAreaUV==3)
+			$allPoses = getPositionFromParticle();
+		
+		//-------将位置信息和bald贴图结合
+		string $tex=`textFieldButtonGrp -q -text baldTextureField`;
+		if($tex!="")
+			$allPoses = getMeshBaldPos($cpom,$allPoses);
+				
+		if($grow_update==-1)	
+		{
+			int $sizeP =`size $allPoses`;
+			if($sizeP>0)
+			{
+				//------将位置信息用粒子显示出来
+				genParticleWith($allPoses);
+			}			
+
+			delete $cpom;
+			if($follicT!=""&&`objExists $follicT`) delete $follicT;
+			return;
+		}
+		if($grow_update==-2)
+		{
+			string $fgg=`createNode "transform" -n "displayCurveGrp#"`;
+			vector $tempP,$tempN,$curvePoses[];
+			int $feaId=0;
+			for(;$feaId<`size $allPoses`;$feaId++)
+			{
+				clear $curvePoses;
+				float $curveLen = $feaScaleV[0]+rand(-$feaScaleRanV[0],$feaScaleRanV[0]);
+				vector $tempP=$allPoses[$feaId];
+				setAttr ($cpom+".inPositionX") ($tempP.x);
+				setAttr ($cpom+".inPositionY") ($tempP.y);
+				setAttr ($cpom+".inPositionZ") ($tempP.z);
+				$tempN=getClosestNormal($cpom);
+				vector $unitNormal=unit($tempN);
+				$curvePoses[0]= $tempP;
+				int $kk=1;
+				
+				for(;$kk<$lengthDivision;$kk++)
+					$curvePoses[$kk]=$curvePoses[0]+$unitNormal*$lengthStep*$kk*$curveLen;
+				
+				string $newCurve=makeCurveFromPosition($curvePoses);
+				parent $newCurve $fgg;
+				rename $newCurve "displayCurveN#";
+			}
+			select -cl;
+			delete $cpom;
+			if($follicT!=""&&`objExists $follicT`) delete $follicT;
+			return;
+		}
+		
+	}
+	else if($grow_update==1)//更新羽毛
+		$allPoses = getUpdatePositions($updateFeatherObjs);
+	
+
+	
+	//复制羽毛对每个羽毛进行计算
+	int $feaId=0;
+	string $dupFea[],$feaTemplate,$newFea[];
+	string $fgg;
+	float $realScale[],$realRotate[];
+	clear $dupFea;clear $newFea;clear $realScale;clear $realRotate;
+	
+	int $ProTSize = `size $allPoses`;
+ 
+	if($grow_update==0)
+	{
+		$fgg=`createNode "transform" -n "featherGGrp#"`;
+		startMyProgressWindow("Grow Feather");
+		
+		for(;$feaId<`size $allPoses`;$feaId++)
+		{
+			if($feaTemplateNum>1) $feaTemplate = $allFeathers[(int)rand(0,$feaTemplateNum)];
+			else $feaTemplate = $allFeathers[0];
+			
+			if($copy_instance==1)
+				$dupFea = `duplicate -rr $feaTemplate`;
+			else
+				$dupFea = `instance $feaTemplate`;
+
+			//将羽毛移动到对应位置
+			vector $localPos=$allPoses[$feaId];
+			setAttr ($dupFea[0]+".translateX") ($localPos.x);
+			setAttr ($dupFea[0]+".translateY") ($localPos.y);
+			setAttr ($dupFea[0]+".translateZ") ($localPos.z);
+				
+			setAttr ($cpom+".inPositionX") ($localPos.x);
+			setAttr ($cpom+".inPositionY") ($localPos.y);
+			setAttr ($cpom+".inPositionZ") ($localPos.z);	
+			
+			float $cuv[],$color[];
+			$cuv=getClosestUVFromNode($cpom);
+			$color= getTextureColor($cuv,"scale");
+			
+			//缩放羽毛
+			$realScale[0]=($feaScaleV[0]+rand(-$feaScaleRanV[0],$feaScaleRanV[0]))*$color[0];
+			$realScale[1]=($feaScaleV[1]+rand(-$feaScaleRanV[1],$feaScaleRanV[1]))*$color[1];
+			$realScale[2]=($feaScaleV[2]+rand(-$feaScaleRanV[2],$feaScaleRanV[2]))*$color[2];						
+			setAttr ($dupFea[0]+".scale") $realScale[0] $realScale[1] $realScale[2];	
+							
+			growAlongCurve($allCurveShapes,$dupFea[0],$cpom);
+			
+			$color= getTextureColor($cuv,"up");
+			
+			$realRotate[0]=($feaRotateV[0]+rand(-$feaRotateRanV[0],$feaRotateRanV[0]))*$color[0];
+			$realRotate[1]=($feaRotateV[1]+rand(-$feaRotateRanV[1],$feaRotateRanV[1]))*$color[1];
+			$realRotate[2]=($feaRotateV[2]+rand(-$feaRotateRanV[2],$feaRotateRanV[2]))*$color[2];
+			rotate -r -os $realRotate[0] $realRotate[1] $realRotate[2] $dupFea[0];
+			
+			parent 	$dupFea[0] $fgg;
+			$newFea[`size $newFea`] = $dupFea[0];
+			
+			int $goPro = setProgressWinAmount((float)($feaId+1)/(float)$ProTSize*100);
+			if(!$goPro ) break;
+		}
+		select -r $newFea;
+		getUpdateFeathers();
+		select -cl;
+	}
+	else if($grow_update==1)
+	{
+		startMyProgressWindow("Update Feather");
+		for(;$feaId<`size $allPoses`;$feaId++)
+		{
+			vector $localPos=$allPoses[$feaId];
+			setAttr ($cpom+".inPositionX") ($localPos.x);
+			setAttr ($cpom+".inPositionY") ($localPos.y);
+			setAttr ($cpom+".inPositionZ") ($localPos.z);	
+			
+			float $cuv[]=getClosestUVFromNode($cpom);
+			float $color[]= getTextureColor($cuv,"scale");
+				
+			$realScale[0]=($feaScaleV[0]+rand(-$feaScaleRanV[0],$feaScaleRanV[0]))*$color[0];
+			$realScale[1]=($feaScaleV[1]+rand(-$feaScaleRanV[1],$feaScaleRanV[1]))*$color[1];
+			$realScale[2]=($feaScaleV[2]+rand(-$feaScaleRanV[2],$feaScaleRanV[2]))*$color[2];
+			setAttr ($updateFeatherObjs[$feaId]+".scale") $realScale[0] $realScale[1] $realScale[2];	
+
+			setAttr ($updateFeatherObjs[$feaId]+".rotate") 0 0 0;
+			growAlongCurve($allCurveShapes,$updateFeatherObjs[$feaId],$cpom);
+			
+			$color= getTextureColor($cuv,"up");
+			$realRotate[0]=($feaRotateV[0]+rand(-$feaRotateRanV[0],$feaRotateRanV[0]))*$color[0];
+			$realRotate[1]=($feaRotateV[1]+rand(-$feaRotateRanV[1],$feaRotateRanV[1]))*$color[1];
+			$realRotate[2]=($feaRotateV[2]+rand(-$feaRotateRanV[2],$feaRotateRanV[2]))*$color[2];
+			
+			rotate -r -os $realRotate[0] $realRotate[1] $realRotate[2] $updateFeatherObjs[$feaId];
+			int $goPro = setProgressWinAmount((float)($feaId+1)/(float)$ProTSize*100);
+			if(!$goPro ) break;
+		}
+	}
+	
+	if($follicT!=""&&`objExists $follicT`) delete $follicT;
+	delete $cpom;
+	
+	select -cl;	
+}
+//------------------------由一系列点来创建一个一度曲线
+global proc string makeCurveFromPosition(vector $pos[])
+{	
+	//-----------------------------lengthcurve
+	string $curveCmd="curve -d 1";
+	string $knots="";
+	int $i=0;
+	for(;$i<`size $pos`;$i++)
+	{
+		vector $tempP=$pos[$i];
+		$curveCmd += " -p ";
+		$curveCmd += $tempP.x;
+		$curveCmd += " ";
+		$curveCmd += $tempP.y;
+		$curveCmd += " ";
+		$curveCmd += $tempP.z;
+		$curveCmd += " ";
+		$knots +="-k ";
+		$knots +=$i;
+		}
+	$curveCmd +=$knots;
+	string $lengthCurveName = eval($curveCmd);
+	setAttr ($lengthCurveName+".overrideEnabled") 1;
+	setAttr ($lengthCurveName+".overrideColor") 17;
+	return $lengthCurveName;
+}
+
+//---------------------------------------------texture
+//将所选图像加入UI
+global proc alignTextureDetail(string $tex)
+{
+	string $sel[]=`ls -sl`;
+	if(`size $sel`==0) textFieldButtonGrp -e -text "" texScaleField;
+	if($tex=="scale")
+		textFieldButtonGrp -e -text $sel[0] texScaleField;
+	else if($tex=="up")
+		textFieldButtonGrp -e -text $sel[0] headUpField;
+	else if($tex=="bald")
+		textFieldButtonGrp -e -text $sel[0] baldTextureField;
+	}
+
+//得到对应图像的rgb
+global proc float[] getTextureColor(float $uv[],string $tex)// rgb
+{
+	string $texName;
+	float $color[3];
+	
+	if($tex=="scale")
+		$texName = `textFieldButtonGrp -q -text texScaleField`;
+	else if($tex=="up")
+		$texName = `textFieldButtonGrp -q -text headUpField`;
+	else if($tex=="bald")
+		$texName = `textFieldButtonGrp -q -text baldTextureField`;	
+	
+	if($texName!=""&&`objExists $texName`)
+	{
+		$color=`colorAtPoint -o RGB -u $uv[0] -v $uv[1] $texName`;
+		return $color;
+	}
+	else
+		return {1,1,1};
+}		
+//-----------------------------------------------add color
+	
+global proc useRandomColorShader()
+{	
+	string $sel[]=`ls -sl`;
+	if(`size $sel`==0) return;
+	string $result="featherObjRandomColorSG",$shader="featherObjRandomColor",$triple="featherGuidTriple";
+	if(!`objExists $shader`)
+		shadingNode -asShader -n $shader lambert;
+	if(!`objExists $triple`)
+	{	
+		shadingNode -asUtility -n $triple tripleShadingSwitch;
+		connectAttr -force ($triple+".output") ($shader+".color");
+	}
+	if(!`objExists $result`)
+	{	
+		sets -renderable true -noSurfaceShader true -empty -name $result;
+		connectAttr -f ($shader+".outColor") ($result+".surfaceShader");
+	}
+	
+	select -r $sel;
+	hyperShade -assign $shader;
+	select -cl;
+	giveTripleRandom($triple);
+}
+	
+global proc giveTripleRandom(string $triple)
+{
+	source AEswitchControlTemplate.mel;
+	AEswitchAddButtonCB($triple,"input","inShape","inTriple");
+	int $multiInds[]=`getAttr -mi ($triple+".input")`;
+	
+	int $seed =`intFieldGrp -q -value1 randomSeedField`;
+	seed($seed);
+	for($id in $multiInds)
+	{
+	    vector $rand=<<rand(0,1),rand(0,1),rand(0,1)>>;
+	    setAttr ($triple+".input["+$id+"].inComp1") ($rand.x);
+	    setAttr ($triple+".input["+$id+"].inComp2") ($rand.y);
+	    setAttr ($triple+".input["+$id+"].inComp3") ($rand.z);    
+	    }
+	}
+//-----------------------------------------------add color
+
+//-------------                                      add uv info to objs
+global proc string addFeatherUVAttrs(string $obj)
+{
+	if(`nodeType $obj`!="transform")
+	{
+		string $rela[]=`listRelatives -p -f $obj`;
+		$obj = $rela[0];
+		}
+	if(!`attributeExists "featherU" $obj`)
+	{
+		addAttr -ln "featherU"  -at double -min 0 -max 1 -dv 0 $obj;
+		setAttr -e -keyable true ($obj+".featherU");
+	}
+	if(!`attributeExists "featherV" $obj`)
+	{
+		addAttr -ln "featherV"  -at double -min 0 -max 1 -dv 0 $obj;
+		setAttr -e -keyable true ($obj+".featherV");
+	}
+	if(!`attributeExists "growVertexID" $obj`)
+	{
+		addAttr -ln "growVertexID"  -at long -min 0  -dv 0 $obj;
+		setAttr -e -keyable true ($obj+".growVertexID");
+	}
+	return $obj;	
+}
+global proc string createCPOM(string $geo)
+{
+	string $npom;
+	if(`nodeType $geo` == "mesh"|| `nodeType $geo`=="objectSet")
+	{
+		if(`nodeType $geo`=="objectSet")
+		{
+			select -r $geo;
+			string $s[]=`ls -fl -sl`;
+			string $name[];
+			tokenize $s[0] "." $name;
+			if(`nodeType $name[0]`=="mesh") 
+				$geo=$name[0];
+			else
+			{
+				string $k[]=`listRelatives -f -s $name[0]`;
+				if(`size $k`!=0&&`nodeType $k[0]`=="mesh") $geo=$k[0];
+			}
+		}
+		
+		$npom=`createNode "closestPointOnMesh"`;
+		connectAttr ($geo+".worldMesh") ($npom+".inMesh");
+		connectAttr ($geo+".worldMatrix") ($npom+".inputMatrix");
+		return $npom;	
+	}
+	else if(`nodeType  $geo`=="nurbsSurface")
+	{
+		$npom=`createNode "closestPointOnSurface"`;
+		connectAttr ($geo+".worldSpace") ($npom+".inputSurface");
+		return $npom;
+	}
+}
+global proc float[] getClosestPosition(string $np,float $pos[])	
+{
+		setAttr ($np+".inPositionX")  $pos[0];	
+		setAttr ($np+".inPositionY")  $pos[1];
+		setAttr ($np+".inPositionZ")  $pos[2];
+		float $r[3]=`getAttr ($np+".position")`;
+		
+		return $r;	
+	}
+//将最近点的uv以及face index信息写出去vector<<u,v,faceIndex>>
+global proc vector feaGetClosestUV(string $np,float $pos[])
+{
+		setAttr ($np+".inPositionX")  $pos[0];	
+		setAttr ($np+".inPositionY")  $pos[1];
+		setAttr ($np+".inPositionZ")  $pos[2];
+		float $r1 =`getAttr ($np+".parameterU")`;
+		float $r2 =`getAttr ($np+".parameterV")`;
+		
+		float $r3 =-1;
+		if(`nodeType $np`=="closestPointOnMesh")
+			$r3=`getAttr ($np+".closestFaceIndex")`;
+			
+		return <<$r1,$r2,$r3>>;
+}
+
+global proc addUVInfoToObj()
+{
+	string $sel[]=`ls -sl`;
+	string $grownSurface = `textFieldButtonGrp -q -text getGrowOnSurface`;
+	
+	string $closestNode = createCPOM($grownSurface);
+	float $minDist=100000;
+	vector $uv;
+	for($obj in $sel)
+	{
+		
+		if(`nodeType $obj`=="transform")
+		{
+			addFeatherUVAttrs($obj);
+			float $pos[] = `xform -q -ws -rp $obj`;
+			$uv = feaGetClosestUV($closestNode,$pos);
+			}
+		else if (`nodeType $obj`=="objectSet")
+		{
+			addFeatherUVAttrs($obj);
+			select -r $obj;
+			string $selvtx[]=`ls -fl -sl`;
+			$minDist=100000;
+			float $poss[3];
+			string $closestPoint;
+			for($p in $selvtx)
+			{
+				float $pos[]=`pointPosition $p`;
+				float $cpos[]=getClosestPosition($closestNode,$pos);
+				float $mmDist=mag(<<$pos[0]-$cpos[0],$pos[1]-$cpos[1],$pos[2]-$cpos[2]>>);
+				if($mmDist<$minDist)
+				{
+					$minDist = $mmDist;
+					$poss[0]=$pos[0];$poss[1]=$pos[1];$poss[2]=$pos[2];
+					$closestPoint = $p;
+				}
+			}
+			$uv = feaGetClosestUV($closestNode,$poss);			
+		}
+		setAttr ($obj+".featherU") ($uv.x);
+		setAttr ($obj+".featherV") ($uv.y);
+	}
+	delete $closestNode;
+	select -cl;
+}
+//-----------------	
+
+
+//--------------------------------------------------------------------------------           UI CMD
+//--------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
+//创建一个羽毛的模板
+global proc string createFeaTemplate()
+{
+	int $subds[]=`intFieldGrp -q -v subdivisionField`;
+	
+	select -cl;
+	string $featherTemplate[]=`polyPlane -ch on -o on -w 2 -h 1 -sw ($subds[1]-1) -sh ($subds[0]-1) -cuv 2`;
+	move -r -os -wd 1 0 0 ;
+	move 0 0 0 ($featherTemplate[0]+".scalePivot") ($featherTemplate[0]+".rotatePivot");
+	makeIdentity -apply true -t 1 -r 1 -s 1 -n 0 $featherTemplate[0];
+	string $newName=`rename $featherTemplate[0] "featherBase#"`;
+	return $newName;
+	}
+//得到UI中的引导曲线并返回
+global proc string[] getAllGuidCurves()
+{
+		string $text=`textFieldButtonGrp -q -text getGuidCurve`;
+	 	string $buffer[];
+	 	int $numtoken=`tokenize $text ";" $buffer`;
+	 	if($numtoken<=0) error "No guid nurbs curves in Guid Curves Field.";
+		return $buffer;
+	}
+//得到所有的羽毛模板	
+global proc string[] getAllGuidFeathers()
+{
+	 	string $text=`textFieldButtonGrp -q -text getFeatherTemp`;
+	 	string $buffer[];
+	 	int $numtoken=`tokenize $text ";" $buffer`;
+		return $buffer;
+	}
+	
+//将选择的body添加进UI	
+global proc getGrownOnSurface()
+{
+	string $sel[]=`ls -l -sl`;
+	if(`size $sel`==0) 
+	{
+		textFieldButtonGrp -e -text "" getGrowOnSurface;
+		return;
+	}
+	
+	if(`nodeType $sel[0]`=="objectSet")
+		textFieldButtonGrp -e -text $sel[0] getGrowOnSurface;
+	else
+	{
+		string $cShapeN[] = `listRelatives -f -s $sel[0]`;
+		textFieldButtonGrp -e -text $cShapeN[0] getGrowOnSurface;
+	}
+}
+global proc SelectUpdateFeathers()
+{
+	global string $updateFeatherObjs[];
+	if(`size $updateFeatherObjs`==0) error "jcFeather : Nothing to update.";
+	select -r $updateFeatherObjs;
+	}
+//得到所有要更新的羽毛并加入UI
+global proc getUpdateFeathers()
+{
+	global string $updateFeatherObjs[];
+	string $sel[]=`ls -sl`;
+	if(`size $sel`==0) 
+	{
+		clear $updateFeatherObjs;
+		return;
+	}	
+	$updateFeatherObjs= $sel;
+	}
+//选择粒子id
+global proc getParticlePTID()
+{
+	global string $pointsToGrowOn[];
+	$pointsToGrowOn=`ls -fl -sl`;
+}
+
+//将选择的羽毛模板添加进UI
+global proc getFeatherTemplate()
+{
+	string $sel[]=`ls -l -sl`;
+	if(`size $sel`==0) 
+	{
+		textFieldButtonGrp -e -text "" getFeatherTemp;
+		return;
+	}	
+	string $result="";
+	for($f in $sel)
+	{
+		$result += $f;
+		$result +=";";
+	}
+	textFieldButtonGrp -e -text $result getFeatherTemp;
+}
+//将所有的引导曲线添加进UI
+global proc getGuidedCurves()
+{
+	global string $FeatherGuidCurves[];
+	clear $FeatherGuidCurves;
+	
+	string $sel[]=`ls -l -sl`;
+	if(`size $sel`==0)
+	{
+		textFieldButtonGrp -e -text "" getGuidCurve;
+		return;
+	}
+	string $result="";
+	for($cs in $sel)
+	{
+		string $cShapeN[] = `listRelatives -f -s $cs`;
+		if(`size $cShapeN`==0)continue;
+		if(`nodeType $cShapeN`=="nurbsCurve")
+		{
+			setAttr ($cs+".overrideEnabled") 1;
+			setAttr ($cs+".overrideColor") 17;
+			$FeatherGuidCurves[`size $FeatherGuidCurves`] = $cShapeN[0];
+			$result +=$cShapeN[0];
+			$result +=";";
+		}
+	}
+	textFieldButtonGrp -e -text $result getGuidCurve;
+}
+
+global proc changeGrowMode()
+{
+	int $type=`radioButtonGrp -q -select growFeatherGuidMode`; 
+	if($type==1)
+	{
+	 intFieldGrp -e -en 1 ExactNumF;        
+ 	 intFieldGrp -e -en 0 noPerArea;
+ 	 intFieldGrp -e -en 0 maxNumFeather;
+    	 }
+   	else if($type==2)
+   	{
+	 intFieldGrp -e -en 0 ExactNumF;        
+ 	 intFieldGrp -e -en 1 noPerArea;
+ 	 intFieldGrp -e -en 1 maxNumFeather;	   	
+	   	}
+}
+global proc changePositionMode()
+{
+	int $type=`radioButtonGrp -q -select growPolyUVGuidMode`; 
+	if($type==1)
+	 tabLayout -edit -selectTab polyAreaColum positionMode;	
+   	else if($type==2)
+	   	tabLayout -edit -selectTab uvColum positionMode;
+	else if($type==3)
+		tabLayout -edit -selectTab pointColum positionMode;	
+}
+global proc switchCurveLenRatio()
+{
+		int $useClr=`checkBoxGrp  -q -v1 curveLengthRatioCheck`;  
+		if($useClr) 	 
+			floatFieldGrp  -e -en 1 exactGCRatioField;
+		else
+			floatFieldGrp  -e -en 0 exactGCRatioField;
+	}
+	
+global proc int setProgressWinAmount(float $step)
+{
+	 $step = (int) $step;
+     progressWindow -edit
+             -progress $step
+             -status ("Gone :  "+$step+"%");
+             
+     if ( `progressWindow -query -isCancelled`||`progressWindow -query -progress` >= 100 ) 
+     {
+     	progressWindow -endProgress;
+     	return false;
+ 	 } 
+ 	 return true;   
+}
+	
+global proc startMyProgressWindow(string $winName)
+{
+    progressWindow
+    	 -min 0
+    	 -max 100
+         -title $winName
+         -progress 0
+         -status "   Gone : 0%"
+         -isInterruptable true;
+	}
+global proc saveUVIwritePath(string $path,string $stuff)
+{
+	textFieldButtonGrp -e -tx $path browseUVPath;
+	}
+global proc growFeatherGuids()
+{
+	python("import jcNodeUtility as nu");
+	global string $updateFeatherObjs[];
+	clear $updateFeatherObjs;
+	global string $pointsToGrowOn[];
+	clear $pointsToGrowOn;
+	
+	if(`window -ex growFeatherG`)
+         deleteUI -window growFeatherG;
+	window -title "JC Grow Feather"
+ 		-iconName "Feather" 
+ 		-widthHeight 300 210 growFeatherG;
+  	string $currentPorject=`workspace -q -rd`; 		
+ 	columnLayout -adjustableColumn true;	
+  	
+	string $totalTabs = `tabLayout -innerMarginWidth 5 -innerMarginHeight 5 featherLayoutTab`;
+	
+ 	//---------------------------------------------------------------------------	   	
+	string $feaReady=`columnLayout -adjustableColumn true feaReadyColum`;
+	separator -height 10 ;
+				frameLayout -cl 1 -cll 1 -label "Feather Template" -borderStyle "in";
+					columnLayout -adjustableColumn true ;
+						intFieldGrp -numberOfFields 2 -label "Subdivision" -value1 3 -value2 5 subdivisionField;
+				 		button -h 25 -ann "Create a single feather polyPlane" 
+				 			   -label "Make Feather Template" -command "createFeaTemplate";
+			 		setParent ..;
+		 		setParent ..;
+
+		 		separator -height 5 ;
+		 		textFieldButtonGrp
+		 			-ann "Select a feather(transfrom node) object which is used to grow.Multi objects are supported.The random objects will be used.The objects must freeze transfromations."
+		    		-ed false
+		        	-label "Feather"
+		        	-text  ""
+		        	-cal 1 "center"
+		        	-buttonLabel "Pick"
+		        	-bc "getFeatherTemplate"
+		        	getFeatherTemp;
+		        	 	
+		 		textFieldButtonGrp
+		 			-ann "Select an object to grow feather on.Poly,nurbsSurface,poly face sets are supported.The objects must freeze transfromations."
+		    		-ed false
+		        	-label "Grow On"
+		        	-text  ""
+		        	-cal 1 "center"
+		        	-buttonLabel "Pick"
+		        	-bc "getGrownOnSurface"
+		        	getGrowOnSurface;
+			   textFieldButtonGrp
+			   			-ann "Select single or multi curves to guid the direction of the feather.The Curves must freeze transfromations."
+			    		-ed false
+			        	-label "Guid Curves"
+			        	-text  ""
+			        	-cal 1 "center"
+			        	-buttonLabel "Pick"
+			        	-bc "getGuidedCurves"
+			        	getGuidCurve;
+		 setParent ..;
+	    	
+//---------------------------------------------------------------------------
+       	string $findPos=`columnLayout -adjustableColumn true findPosColum`;
+       	separator -height 10 ;	       	
+		        rowLayout -nc 2;
+				    text -label "                     Grow Mode";
+					radioButtonGrp  
+					-numberOfRadioButtons 3 -cc "changePositionMode"
+					-labelArray3 "Poly Area" "UV" "Point" growPolyUVGuidMode;
+					radioButtonGrp -e -select 2 growPolyUVGuidMode; 
+				setParent ..;	
+				button -ann "View the grow position using particle.Grow On field must have an object."
+					-h 25 -label "View Grow Position With Particle" -command "doGrowFeatherGuid(-1)";
+// 	   			button -h 25 -ann "grow curves at position along normal"
+// 		 			   -label "View Grow Position With Curves" -command "doGrowFeatherGuid(-2)";
+				separator -height 10 ;
+												
+				string $tabs = `tabLayout -innerMarginWidth 5 -innerMarginHeight 5 positionMode`;   
+					string $childPosition1=`columnLayout -adjustableColumn true polyAreaColum`;    
+				        rowLayout -nc 2;
+						    text -label "                                      Grow Mode   ";
+							radioButtonGrp  
+							-numberOfRadioButtons 2 -cc "changeGrowMode"
+							-labelArray2 "Exact Num" "Num Per Area" growFeatherGuidMode;
+							radioButtonGrp -e -select 1 growFeatherGuidMode; 
+						setParent ..;
+						
+				 	    intFieldGrp -numberOfFields 1 -en 1
+				        	 -label "Exact Num" -value1 100 ExactNumF;        
+				 	    intFieldGrp -numberOfFields 1 -en 1
+				        	 -label "Num Per Area" -value1 5 noPerArea;
+				 	    intFieldGrp -numberOfFields 1 -en 1
+				        	 -label "Max Num" -value1 0 maxNumFeather;
+				    	floatFieldGrp -numberOfFields 1
+				    		-label "Scale Area if 0" -precision 3 -value1 1 scaleAreaIfNumZero;				        
+				 	    intFieldGrp -numberOfFields 1 -en 1
+				        	 -label "Max Num Per Triangle" -value1 0 maxNumPerTriangle;				        	 
+				    	floatFieldGrp -numberOfFields 1
+				    		-label "Feather Radius" -precision 3 -value1 0.3 feaRadiusScale;
+						intFieldGrp -numberOfFields 1 -en 1
+				        	 -label "Try Times" -value1 20 tryNumsField;
+			        setParent ..;
+			        string $childPosition2=`columnLayout -adjustableColumn true uvColum`;
+				 	    intFieldGrp -numberOfFields 1 -en 1
+				        	 -label "U Num" -value1 10 uDirNumFeather;
+				 	    intFieldGrp -numberOfFields 1 -en 1
+				        	 -label "V Num" -value1 10 vDirNumFeather;
+				       	floatFieldGrp -numberOfFields 1
+		    				-label "Random Translation" -precision 3 -value1 0 uvRandomSize;
+		        		floatFieldGrp -numberOfFields 1
+		    				-label "Translation Frequency" -precision 3 -value1 5 uvRandomFrequency;
+		    			checkBoxGrp  -numberOfCheckBoxes 2
+								        -label "Brick"
+								        -labelArray2 "U Brick" "V Brick" brickFeatherCheck;     
+			        setParent ..;
+			        string $childPosition3=`columnLayout -adjustableColumn true pointColum`;
+			        	button -h 25 -label "Use Selected Points To Grow" -command "getParticlePTID";
+			        	//button -h 25 -label "Use Selected Curves cv[0]" -command "getCurveBaseID";
+			        	separator -height 5 ;
+			        	button -h 25 -label "Select Growing Points" -command "selectParticleInIDField"; 
+			        	
+			        setParent ..;   
+			 	tabLayout -edit -tabLabel $childPosition1 "Area Mode" 
+			 					-tabLabel $childPosition2 "UV Mode" 
+			 					-tabLabel $childPosition3 "Point Mode" 
+			 					$tabs;
+			 	tabLayout -edit -selectTab uvColum positionMode;
+			 	setParent ..;
+			 	textFieldButtonGrp
+		    		-ed false
+		        	-label "Bald Texture"
+		        	-text  ""
+		        	-cal 1 "center"
+		        	-buttonLabel "Pick"
+		        	-bc "alignTextureDetail(\"bald\")"
+		        	baldTextureField;			
+ 	    	setParent ..;
+//----------------------------------------------------------------------------
+       		string $interPDir=`columnLayout -adjustableColumn true interPolatColum`; 
+       			separator -height 10 ; 
+       			rowLayout -nc 2;
+				    text -label "                     Duplicate Mode";
+					radioButtonGrp  
+					-numberOfRadioButtons 2
+					-labelArray2 "Copy" "Instance" duplicateGuidMode;
+					radioButtonGrp -e -select 1 duplicateGuidMode; 
+				setParent ..;
+					        
+		 	    intFieldGrp -numberOfFields 1 -en 1
+		        	 -label "Use Curve Num" -value1 2 useCurveNo;
+		        floatFieldGrp -numberOfFields 1 
+		    		-label "Search Radius" -precision 3 -value1 5 searchRadius;
+		        floatFieldGrp -numberOfFields 1
+		    		-label "Power" -precision 3 -value1 1 powerParam;
+    		setParent ..;
+    		
+//----------------------------------------------------------------------------
+       		string $sizeAndDir=`columnLayout -adjustableColumn true sizeAndDirColum`;
+       			separator -height 10 ;
+       			
+       			floatFieldGrp -numberOfFields 3 -pre 3
+						    -label "Rotate" -value1 0 -value2 0 -value3 10 feaRotateield;
+       			floatFieldGrp -numberOfFields 3 -pre 3
+						    -label "Rotate Random" -value1 0 -value2 0 -value3 3 feaRotateRandomField;
+		    	textFieldButtonGrp
+		    		-ed false
+		        	-label "Texture ( RGB * XYZ )"
+		        	-text  ""
+		        	-cal 1 "center"
+		        	-buttonLabel "Pick"
+		        	-bc "alignTextureDetail(\"up\")"
+		        	headUpField;
+		        separator -height 10 ;
+		        			
+		                   			
+       			floatFieldGrp -numberOfFields 3 -pre 3
+						    -label "Scale" -value1 1 -value2 1 -value3 1 feaScaleField;
+       			floatFieldGrp -numberOfFields 3 -pre 3
+						    -label "Scale Random" -value1 0 -value2 0 -value3 0 feaScaleRandomField;
+				textFieldButtonGrp
+		    		-ed false
+		        	-label "Texture ( RGB * XYZ )"
+		        	-text  ""
+		        	-cal 1 "center"
+		        	-buttonLabel "Pick"
+		        	-bc "alignTextureDetail(\"scale\")"
+		        	texScaleField; 	
+		        separator -height 10 ;			        							    
+		    	intFieldGrp -numberOfFields 1 -en 1
+		        	 -label "Random Seed" -value1 1 randomSeedField;    		
+    		setParent ..;	     		   
+	   	 string $uviFileCTab=`columnLayout -adjustableColumn true uviFileColumn`;
+	   	 		//----------write uv UI	
+	   	 		separator -height 10 ;	    	
+    			textFieldButtonGrp
+			   			-ann "Write uv info to this path."
+			    		-ed false
+			        	-label "UVI File Path"
+			        	-text  ($currentPorject+"data/")
+			        	-cal 1 "center"
+			        	-buttonLabel "browse"
+			        	-bc ("fileBrowser \"saveUVIwritePath\" \"save to\" \"\" 4")
+			        	browseUVPath;
+			    textFieldGrp -label "UVI File Name             " -text "uvData" uvInfoFileField;		
+				button -ann "Write selected particle position closest uv data to a binary file.Grow On field must have an object." 
+					-h 25 -label "Write Selected Particle Position UV To File" -command "writeParticleToUVI"; 
+				
+				//----------write uv UI	
+	   	 setParent ..;
+	   	 
+	tabLayout -edit -tabLabel $feaReady "Feather Ready" 
+					-tabLabel $findPos "Find Position" 
+					-tabLabel $interPDir "Interpolate" 
+					-tabLabel $sizeAndDir "Random"
+					-tabLabel $uviFileCTab "UVI Data"
+					$totalTabs;
+	setParent ..;
+	
+	button -h 25 -ann "Do feather growing." 
+			-label "Grow >>" -command "doGrowFeatherGuid(0)";			   	 		
+	button -h 25 -ann "Add featherU and featherV attributes to your selected transform nodes or sets. Assign them with the closest point UV On Grow On Objects." 
+		 			   -label "Add UV Info To Obj" -command "addUVInfoToObj";
+	button -h 25 -ann "Assign Slected Objects Random Color" 
+			-label "Assign Random Color" -command "useRandomColorShader";				 			   
+	separator -height 5 ;
+	frameLayout -cl 1 -cll 1 -label "Update Guid" -borderStyle "in";
+		columnLayout -adjustableColumn true ;				
+		button -h 25 -ann "Add selected feahter objects to update." -label "Make Selected Feathers Updating"  -command "getUpdateFeathers" getUpdateFeather;  
+		button -h 25 -ann "Select updating feathers" -label "Select Updating Feathers" -command "SelectUpdateFeathers" SelectUpdateFeather;  
+		separator -height 5 ;  
+		button -h 25 -ann "Update the feathers in Update Feather field.The position will not be updated." 
+			   -label "Update >>" -command "doGrowFeatherGuid(1)"; 
+		setParent ..;
+	setParent ..;  					 	 
+ 	window -e -widthHeight 520 440 growFeatherG ;
+ 	
+	showWindow growFeatherG;	
+	changeGrowMode();
+	}

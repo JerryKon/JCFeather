@@ -1,0 +1,119 @@
+global proc selectScatterGrowComponent(string $node)
+{
+	string $inConnect[]=`listConnections -s 1 -d 0 -sh 1 -type mesh ($node+".inGrowMesh")`;
+	string $comp[]=`getAttr ($node+".inComponentList")`;
+	select -cl;
+	if(`size $inConnect`==0) return;
+	if(`size $comp`==0) select -r $inConnect[0];
+	else
+	    for($c in $comp)
+	        select -add ($inConnect[0]+"."+$c);
+}
+
+//----------------------------------------------------------------------------------------UI Event
+global proc AEjcScatterUpdateTypeMode( string $nodeName )
+{
+		int $scatterM = getAttr($nodeName + ".scatterMode" );
+		editorTemplate -dimControl $nodeName "numPerArea" ($scatterM == 1 || $scatterM == 2 );
+		
+		editorTemplate -dimControl $nodeName "uvSegment" ($scatterM == 0|| $scatterM == 2);	
+		editorTemplate -dimControl $nodeName "uvOffset" ($scatterM == 0|| $scatterM == 2);
+		editorTemplate -dimControl $nodeName "jitterFrequency" ($scatterM == 0|| $scatterM == 2);
+		editorTemplate -dimControl $nodeName "jitterDistance" ($scatterM == 0|| $scatterM == 2);										
+		editorTemplate -dimControl $nodeName "maxDistance" ($scatterM != 2);
+}
+global proc AEScatterSelectComponentActions(string $count)
+{
+	string $nodeName[];
+	tokenize($count, ".", $nodeName);
+	
+	setUITemplate -pst attributeEditorPresetsTemplate;
+	
+	columnLayout -adjustableColumn true;
+		
+		button -label "Select Grow Mesh"  -align center
+			-c ("selectScatterGrowComponent " + $nodeName[0] )
+			SelectGrowMeshForScatter;
+	setParent ..;
+
+	setUITemplate -ppt;
+	}
+global proc AEScatterSelectComponentReplace(string $count)
+{
+	string $nodeName[];
+	tokenize($count, ".", $nodeName);
+	button -e -c ("selectScatterGrowComponent " + $nodeName[0] ) SelectGrowMeshForScatter;
+}
+
+global proc AEjcScatterTemplate( string $nodeName )
+{
+	
+	editorTemplate -beginScrollLayout;
+		editorTemplate -beginLayout "Gerenal Properties"  -collapse 0;
+			editorTemplate -addControl "displayLocator";
+			editorTemplate -addControl "colorHue";
+			editorTemplate -addControl "scatterMode" "AEjcScatterUpdateTypeMode";
+			editorTemplate -addSeparator;		
+			editorTemplate -addControl "numPerArea";
+			editorTemplate -addControl "maxDistance";
+				
+			editorTemplate -addSeparator;			
+			editorTemplate -addControl "uvSegment";		
+			editorTemplate -addControl "uvOffset";																				
+			editorTemplate -addControl "jitterDistance";		
+			editorTemplate -addControl "jitterFrequency";
+			
+			editorTemplate -addSeparator;
+			editorTemplate -addControl "randomSeed";
+			editorTemplate -addControl "uvSetName";	
+			editorTemplate -callCustom "AEjcFeatherBaldnessTexNew" "AEjcFeatherBaldnessTexReplace" "baldnessTex";
+			editorTemplate -addControl "pointSize";
+			
+			editorTemplate -callCustom "AEScatterSelectComponentActions" "AEScatterSelectComponentReplace" "None";								
+		editorTemplate -endLayout;
+		
+		editorTemplate -addControl "userUvData";		
+							
+	editorTemplate -beginLayout (uiRes("m_AElocatorTemplate.kLocatorAttributes")) -collapse 1;
+    AElocatorCommon $nodeName;
+    editorTemplate -endLayout;
+    {
+			editorTemplate -suppress "motionBlur";
+			editorTemplate -suppress "visibleInReflections";
+			editorTemplate -suppress "visibleInRefractions";
+			editorTemplate -suppress "maxVisibilitySamplesOverride";
+			editorTemplate -suppress "maxVisibilitySamples";
+			editorTemplate -suppress "geometryAntialiasingOverride";
+			editorTemplate -suppress "antialiasingLevel";
+			editorTemplate -suppress "shadingSamplesOverride";
+			editorTemplate -suppress "shadingSamples";
+			editorTemplate -suppress "maxShadingSamples";
+			editorTemplate -suppress "volumeSamplesOverride";
+			editorTemplate -suppress "volumeSamples";
+			editorTemplate -suppress "depthJitter";
+			editorTemplate -suppress "ignoreSelfShadowing";
+			editorTemplate -suppress "primaryVisibility";
+			editorTemplate -suppress "compInstObjGroups";
+			editorTemplate -suppress "castsShadows";
+			editorTemplate -suppress "receiveShadows";	
+    }
+
+    AEshapeTemplate $nodeName;
+    
+	editorTemplate -addExtraControls;
+	editorTemplate -endScrollLayout;
+}
+
+global proc AEjcFeatherBaldnessTexNew (string $attrName)
+{
+	attrNavigationControlGrp 
+		-l "Baldness Map"
+		-at $attrName
+		"baldTexGrp";
+}
+global proc AEjcFeatherBaldnessTexReplace (string $attrName)
+{
+	attrNavigationControlGrp -edit
+		-at $attrName
+		"baldTexGrp";
+}

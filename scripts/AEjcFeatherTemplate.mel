@@ -1,0 +1,354 @@
+global proc int AEassignTextureCB_jcf( string $fileAttribute,
+                                 string $filename,
+                                 string $fileType )
+{
+
+ 	string $currentDir = `workspace -q -dir`;
+    retainWorkingDirectory ($currentDir);
+
+ 	string $tokenArray[];
+ 	tokenize($fileAttribute, ".", $tokenArray);
+
+ 	string $fileNode = $tokenArray[0];
+ 	int $autoconvert=`getAttr ($fileNode+".autoConvertTex")`;
+	string $texName=$filename ;
+	if($autoconvert)
+		$texName= jcDelightTexmake($filename);
+	setAttr $fileAttribute -type "string" $texName;	
+	return true;
+}
+global proc AEfileTextureBrowser_jcf( string $cmd )
+{
+    string  $workspace = `workspace -q -fn`;
+    setWorkingDirectory $workspace "image" "sourceImages";
+	
+	fileBrowser ($cmd, "Open", "image", 0);
+}
+global proc AEfileTextureNameReplace_jcf (string $fileAttribute)
+{
+	connectControl -fileName textureNameField $fileAttribute;
+
+    string $command = "AEassignTextureCB_jcf "+" "+$fileAttribute;
+
+    button -e -c
+		("AEfileTextureBrowser_jcf \"" + $command + "\"" ) browser;
+}
+global proc AEfileTextureNameNew_jcf (string $fileAttribute)
+{
+	setUITemplate -pst attributeEditorTemplate;
+	rowLayout -nc 3 textureNameLayout;
+		text -label "Color Texture";
+		textField textureNameField;
+			symbolButton -image "navButtonBrowse.xpm" browser;
+	setParent ..;
+	setUITemplate -ppt;
+	
+    AEfileTextureNameReplace_jcf $fileAttribute;
+}
+
+//----------------------------------------------------------------------------------------UI Event
+global proc AEjcFeatherUpdateShapeSymmetry( string $nodeName )
+{
+		int $shapeSymmetry = getAttr($nodeName + ".shapeSymmetry" );
+		editorTemplate -dimControl $nodeName "rightBarbuleLengthScale" ($shapeSymmetry == 1);
+}
+global proc AEJCFeatherUpdateSurfaceFeather( string $nodeName )
+{
+		int $shapeSymmetry = getAttr($nodeName + ".surfaceFeather" );
+		editorTemplate -dimControl $nodeName "direction" ($shapeSymmetry != 1);
+}
+global proc AEjcFeatherUpdateUVProjectScale( string $nodeName )
+{
+		int $shapeSymmetry = getAttr($nodeName + ".projectTexUV" );
+		editorTemplate -dimControl $nodeName "uvProjectScale" ($shapeSymmetry != 1);
+}
+global proc AELenScaleExchangeActions(string $count)
+{
+	string $nodeName[];
+	tokenize($count, ".", $nodeName);
+	
+	setUITemplate -pst attributeEditorPresetsTemplate;
+	
+	columnLayout -adjustableColumn true;
+		
+		button -label "Swap Length Scale"  -align center
+			-c ("exchangeLeftRightBarLen " + $nodeName[0] )
+			exchangeLenLeft_right;
+	setParent ..;
+
+	setUITemplate -ppt;
+	}
+global proc AELenScaleExchangeReplace(string $count)
+{
+	string $nodeName[];
+	tokenize($count, ".", $nodeName);
+	button -e -c ("exchangeLeftRightBarLen " + $nodeName[0] ) exchangeLenLeft_right;
+}
+
+
+global proc resetRampCurveAttr_JCF(string $node,string $attribute,float $defaultVal,float $defaultPos,int $defaultIntp)
+{
+	int $rampSize=`getAttr -s ($node+"."+$attribute)`;
+	//int $rampSize=`size $multInd`;
+	if($rampSize==0)
+	{
+		setAttr ($node+"."+$attribute+"[0]."+$attribute+"_FloatValue") $defaultVal;
+	    setAttr ($node+"."+$attribute+"[0]."+$attribute+"_Position") $defaultPos;
+	    setAttr ($node+"."+$attribute+"[0]."+$attribute+"_Interp") $defaultIntp;
+	}
+}
+global proc AEResetJCFeatherRampAttr(string $node)
+{
+	resetRampCurveAttr_JCF($node,"rachisThickScale",0.2,0,2);
+	resetRampCurveAttr_JCF($node,"barbuleDensity",1,0,2);
+	resetRampCurveAttr_JCF($node,"leftBarbuleLengthScale",1,0,2);
+	resetRampCurveAttr_JCF($node,"rightBarbuleLengthScale",1,0,2);
+	
+	resetRampCurveAttr_JCF($node,"leftGapDensity",1,0,2);
+	resetRampCurveAttr_JCF($node,"rightGapDensity",1,0,2);
+	
+	resetRampCurveAttr_JCF($node,"forcePerSegmentScale",1,0,2);
+	resetRampCurveAttr_JCF($node,"forceRotateScale",1,0,2);	
+	
+	resetRampCurveAttr_JCF($node,"barbuleUpDownRachis",1,0,2);
+	resetRampCurveAttr_JCF($node,"barbuleUpDownBarbule",1,0,2);	
+	
+	resetRampCurveAttr_JCF($node,"barbuleThickScale",0.2,0,2);
+	resetRampCurveAttr_JCF($node,"barbuleThickAdjust",1,0,2);	
+	
+	resetRampCurveAttr_JCF($node,"kbRotate1",0.5,0,2);
+	resetRampCurveAttr_JCF($node,"kbRotate2",0.5,0,2);	
+	resetRampCurveAttr_JCF($node,"kbRotate3",0.5,0,2);
+	resetRampCurveAttr_JCF($node,"kbRotate4",0.5,0,2);		
+			
+}
+	
+//----------------------------------------------------------------------------------------UI事件，在不同条件下将不需要的空间显示成灰色
+global proc AEjcFeatherTemplate( string $nodeName )
+{
+// 	print "-------------\n";
+// 	AEResetJCFeatherRampAttr($nodeName);
+// 	print "*************\n";
+	editorTemplate -beginScrollLayout;
+		editorTemplate -beginLayout "General Properties"  -collapse 1;
+			editorTemplate -addControl "active";
+			editorTemplate -addControl "";
+			editorTemplate -addControl "surfaceFeather" "AEJCFeatherUpdateSurfaceFeather";				
+						
+			editorTemplate -addControl "displayQuality";
+			editorTemplate -addControl "curveType";				
+			editorTemplate -addControl "displayAs";						
+			editorTemplate -addControl "direction";	
+		editorTemplate -endLayout;
+		
+		editorTemplate -beginLayout "Rachis"  -collapse 1;
+			editorTemplate -addControl "rachisRenderAs" ;
+			editorTemplate -addSeparator;
+			editorTemplate -addControl "rachisSegment";
+			editorTemplate -addControl "rachisPosition";			
+			editorTemplate -addControl "rachisStart";
+			editorTemplate -addControl "rachisEnd";
+			editorTemplate -addSeparator;					
+			editorTemplate -addControl "rachisSides";			
+			editorTemplate -addControl "rachisThick";
+
+			AEaddRampControl ($nodeName+".rachisThickScale");
+		editorTemplate -endLayout;
+		
+		editorTemplate -beginLayout "Rachis Material"  -collapse 1;	
+			editorTemplate -addControl "rachisRootColor";
+			editorTemplate -addControl "rachisTipColor";	
+		editorTemplate -endLayout;
+				
+		editorTemplate -beginLayout "Barbule"  -collapse 1;	
+			editorTemplate -addControl "barbuleNum";
+			editorTemplate -addControl "barbuleSegments";
+			AEaddRampControl ($nodeName+".barbuleDensity");				
+			editorTemplate -beginLayout "Barbule Length"  -collapse 1;	
+				editorTemplate -addControl "shapeSymmetry" "AEjcFeatherUpdateShapeSymmetry";
+				editorTemplate -addControl "barbuleLength";
+				editorTemplate -addControl "barbuleLengthRandScale";
+				
+				editorTemplate -callCustom "AELenScaleExchangeActions" "AELenScaleExchangeReplace" "None";
+				
+						
+				AEaddRampControl ($nodeName+".leftBarbuleLengthScale");	
+				AEaddRampControl ($nodeName+".rightBarbuleLengthScale");
+			editorTemplate -endLayout;
+			
+			editorTemplate -beginLayout "Barbule Gap"  -collapse 1;			
+				editorTemplate -addControl "gapForce";
+				editorTemplate -addControl "gapMaxForce";
+				editorTemplate -addControl "gapSize";
+				AEaddRampControl ($nodeName+".leftGapDensity");	
+				AEaddRampControl ($nodeName+".rightGapDensity");
+												
+			editorTemplate -endLayout;			
+								
+			editorTemplate -beginLayout "Barbule Turbulence"  -collapse 1;
+				editorTemplate -beginLayout "Force Turbulence"  -collapse 1;	
+					editorTemplate -addControl "forcePerSegment";
+					editorTemplate -addControl "turnAtForce";				
+					editorTemplate -addControl "rotateDegree";
+					AEaddRampControl ($nodeName+".forcePerSegmentScale"); 				
+					AEaddRampControl ($nodeName+".forceRotateScale");
+				editorTemplate -endLayout;	
+								
+				editorTemplate -beginLayout "Up Down"  -collapse 1;	
+		 			editorTemplate -addControl "upDownNoise";														
+		 			editorTemplate -addControl "upDownLength";
+					AEaddRampControl ($nodeName+".barbuleUpDownRachis");		 			
+					AEaddRampControl ($nodeName+".barbuleUpDownBarbule");
+				editorTemplate -endLayout;	
+				
+				editorTemplate -beginLayout "Noise"  -collapse 1;														
+					editorTemplate -addControl "rachisNoiseFrequency";
+					editorTemplate -addControl "barbuleNoiseFrequency";			
+					editorTemplate -addControl "noisePhase";
+				editorTemplate -endLayout;						
+			editorTemplate -endLayout;	
+			
+			editorTemplate -beginLayout "Barbule Thick"  -collapse 1;																						
+				editorTemplate -addControl "barbuleThick";
+				editorTemplate -addControl "barbuleRandThick";			
+				AEaddRampControl ($nodeName+".barbuleThickScale");
+				AEaddRampControl ($nodeName+".barbuleThickAdjust");				
+			editorTemplate -endLayout;				
+							
+			editorTemplate -beginLayout "Key Barbules"  -collapse 1;
+				editorTemplate -addControl "keyBarbulePos1";
+				editorTemplate -addControl "keyBarbulePos2";			
+				editorTemplate -addControl "keyBarbulePos3";
+				editorTemplate -addControl "keyBarbulePos4";				
+				editorTemplate -addSeparator;
+				editorTemplate -addControl "keyBarbuleStartAngle1";
+				editorTemplate -addControl "keyBarbuleStartAngle2";			
+				editorTemplate -addControl "keyBarbuleStartAngle3";
+				editorTemplate -addControl "keyBarbuleStartAngle4";				
+				editorTemplate -addSeparator;				
+				editorTemplate -addControl "keyBarbuleStepAngle";
+				AEaddRampControl ($nodeName+".kbRotate1");	
+				AEaddRampControl ($nodeName+".kbRotate2");
+				AEaddRampControl ($nodeName+".kbRotate3");	
+				AEaddRampControl ($nodeName+".kbRotate4");						
+			editorTemplate -endLayout;																
+		editorTemplate -endLayout;
+		
+		editorTemplate -beginLayout "Barbule Material"  -collapse 1;
+			//editorTemplate -addControl "useOutShader";
+			//editorTemplate -addControl "";
+			editorTemplate -addControl "interactiveColor";
+			//editorTemplate -addSeparator;
+			editorTemplate -addControl "rootColor";
+			editorTemplate -addControl "tipColor";
+			editorTemplate -callCustom "AEjcFeatherMainColorTexNew" "AEjcFeatherMainColorTexReplace" "mainColor";			
+			editorTemplate -addSeparator;
+			editorTemplate -addControl "projectTexUV" "AEjcFeatherUpdateUVProjectScale";
+			editorTemplate -addControl "uvProjectScale";
+			editorTemplate -addSeparator;
+			editorTemplate -addControl "autoConvertTex";								
+			editorTemplate -callCustom "AEfileTextureNameNew_jcf" 
+						"AEfileTextureNameReplace_jcf" 
+						"barbuleColorTex";
+			editorTemplate -addControl "textureProcedure";							
+			editorTemplate -addSeparator;
+			editorTemplate -addControl "rootOpacity";
+			editorTemplate -addControl "tipOpacity";
+			editorTemplate -addControl "fadeStart";					
+			editorTemplate -addSeparator;								
+			editorTemplate -addControl "barbuleDiffuse";
+			editorTemplate -addControl "barbuleAmbient";			
+			editorTemplate -addControl "barbuleSpecularColor";	
+			editorTemplate -addControl "barbuleSpecular";						
+			editorTemplate -addControl "barbuleGloss";
+			editorTemplate -addControl "selfShadow";
+			editorTemplate -addSeparator;
+			editorTemplate -addControl "hueVar";	
+			editorTemplate -addControl "satVar";						
+			editorTemplate -addControl "valueVar";
+			editorTemplate -addControl "varFrequency";					
+		editorTemplate -endLayout;
+		
+		editorTemplate -beginLayout "Render Stats"  -collapse 1;
+			editorTemplate -addControl "render";
+			editorTemplate -addControl "";
+			editorTemplate -addControl "uniformWidth";
+			editorTemplate -addControl "";
+			editorTemplate -addSeparator;
+			editorTemplate -addControl "castsShadows";
+			editorTemplate -addControl "";
+			editorTemplate -addControl "receiveShadows";
+			editorTemplate -addControl "";			
+			editorTemplate -addControl "motionBlur";
+			editorTemplate -addControl "";
+			editorTemplate -addControl "primaryVisibility";
+			editorTemplate -addControl "";
+			editorTemplate -addControl "visibleInReflections";
+			editorTemplate -addControl "";
+			editorTemplate -addControl "visibleInRefractions";
+			editorTemplate -addControl "";
+		editorTemplate -endLayout;
+		
+		editorTemplate -beginLayout "Output Mesh"  -collapse 1;
+			editorTemplate -addControl "outputFeatherMesh";	
+			editorTemplate -addControl "";
+			editorTemplate -addControl "meshUVScale";						
+		editorTemplate -endLayout;
+													
+		editorTemplate -beginLayout "Additional Properties"  -collapse 1;
+			editorTemplate -addControl "randSeed";
+			editorTemplate -addControl "featherInfoID";
+		editorTemplate -endLayout;
+		
+		editorTemplate -beginLayout "Proxy Bounding Box Scale"  -collapse 1;
+			editorTemplate -addControl "displayProxyBoundingBox";
+			editorTemplate -addControl "proxyBoundingBoxScale";
+		editorTemplate -endLayout;	
+						
+		editorTemplate -beginLayout "Insert Rib"  -collapse 1;
+			editorTemplate -addControl "preFeatherRib";
+			editorTemplate -addControl "postFeatherRib";				
+			editorTemplate -addControl "preFeatherMeshRib";		
+			editorTemplate -addControl "postFeatherMeshRib";							
+		editorTemplate -endLayout;	
+	
+	editorTemplate -beginLayout (uiRes("m_AElocatorTemplate.kLocatorAttributes")) -collapse 1;
+    AElocatorCommon $nodeName;
+    editorTemplate -endLayout;
+    {			
+		editorTemplate -suppress "maxVisibilitySamplesOverride";
+		editorTemplate -suppress "maxVisibilitySamples";
+		editorTemplate -suppress "geometryAntialiasingOverride";
+		editorTemplate -suppress "antialiasingLevel";
+		editorTemplate -suppress "shadingSamplesOverride";
+		editorTemplate -suppress "shadingSamples";
+		editorTemplate -suppress "maxShadingSamples";
+		editorTemplate -suppress "volumeSamplesOverride";
+		editorTemplate -suppress "volumeSamples";
+		editorTemplate -suppress "depthJitter";
+		editorTemplate -suppress "ignoreSelfShadowing";
+		editorTemplate -suppress "compInstObjGroups";
+
+    }
+
+    AEshapeTemplate $nodeName;
+    
+    
+	editorTemplate -addExtraControls;
+	editorTemplate -endScrollLayout;
+}
+
+
+global proc AEjcFeatherMainColorTexNew (string $attrName)
+{
+	attrNavigationControlGrp 
+		-l "Main Color"
+		-at $attrName
+		"mainColorTexGrp";
+}
+global proc AEjcFeatherMainColorTexReplace (string $attrName)
+{
+	attrNavigationControlGrp -edit
+		-at $attrName
+		"mainColorTexGrp";
+}

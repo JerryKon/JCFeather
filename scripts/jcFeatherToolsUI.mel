@@ -1,0 +1,635 @@
+global string $jcFeatherExportUserRibPath;//"jcFeather_exportUser"
+global string $jcPaintFeatherBrushType="soft"; //"gaussian", "soft", "solid" and "square"
+global string $jcFeatherPainterUI="jcFeatherPaintToolCtx";
+
+global proc string frameToName(int $frame,int $pad)
+{
+	string $newFrame = (string)$frame;
+	int $bytes = sizeBytes($newFrame);
+	string $result="";
+	int $i=1;
+	for(;$i<=($pad-$bytes);$i++)
+		$result +="0";
+	$result +=$newFrame;
+	return $result;
+	}
+//--------------------------------
+//--------------------------------
+//--------------------------------  import rib file
+//--------------------------------
+
+proc int strIndex(string $needle, string $haystack)
+{
+	int	$needleLen = size($needle);
+	int	$haystackLen = size($haystack);
+	int	$i;
+
+	for ($i = 1; $i <= ($haystackLen - $needleLen) + 1; $i++)
+	{
+		if (substring($haystack, $i, $i + $needleLen - 1) == $needle)
+			return $i;
+	}
+
+	return 0;
+}
+proc addrmanShaderPath(string $shaderDir)
+{
+	string	$path = getAttr("renderManGlobals.rman__riopt__searchpath_shader");
+
+	//	If the directory isn't already there, add it.
+	if (strIndex($shaderDir, $path) == 0)
+	{
+		if ($path == "")
+			$path = $shaderDir;
+		else
+			$path += ":" + $shaderDir;
+
+		setAttr -type "string" renderManGlobals.rman__riopt__searchpath_shader
+			$path;
+	}
+}
+	
+global proc featherImpRibPathCallBack(string $path,string $stuff)
+{
+	textFieldButtonGrp -e -tx $path importJcFeatherPathField;
+}
+
+//----write feather data to disk files
+global proc writeFeatherFile()
+{
+	if(!`objExists "jcFeatherGlobals"`) error "jcFeather : No jcFeather Globals exists.";
+	string $path=`textFieldButtonGrp -q -tx exportJcFeatherPathField`;
+
+	if(!endsWith($path,"/")) $path+="/";
+	
+	int $sTime =`floatFieldGrp -q -value1 featherCacheRangeF`;
+	int $eTime =`floatFieldGrp -q -value2 featherCacheRangeF`;	
+	progressBar -edit
+		    -beginProgress
+		    -isInterruptable true
+		    -maxValue ($eTime-$sTime+1)
+    		writeFeaProgBar;
+    		
+	string $currentPath = `file -q -sceneName`;
+	string $nn = basenameEx($currentPath);
+	if($nn=="") $nn="untitled";
+	string $jcsn=`textFieldGrp -q -tx featherName`;
+	if($jcsn!="") $nn=$jcsn;
+	int $minFrame=0;
+	int $useSelected = `checkBoxGrp -q -v1 selectedJCFCheck`;
+	string $writeFeatherCmd="jcWriteFeather";
+	$writeFeatherCmd +=" -a 1";
+	$writeFeatherCmd +=" -s ";
+	$writeFeatherCmd +=$useSelected;
+	int $outFileType=`optionMenuGrp -q -sl featherTypeFile`-1;
+	$writeFeatherCmd +=" -ft ";
+	$writeFeatherCmd +=$outFileType;	
+	$writeFeatherCmd +=" -p ";
+	
+	if( $minFrame> $sTime || `currentTime -q`== $sTime) $minFrame=$sTime;
+	for(;$minFrame<=$eTime;$minFrame++)
+		{
+			if(`progressBar -query -isCancelled writeFeaProgBar`)
+        		break;	
+        				
+			currentTime -e $minFrame;
+			if($minFrame<$sTime) continue;
+			string $name = "\""+$path+$nn+".rib\"";
+			if(catch(`eval($writeFeatherCmd+$name)`))break;
+			progressBar -edit -step 1 writeFeaProgBar;
+		}
+	progressBar -edit
+			    -endProgress
+			    writeFeaProgBar;
+	
+}
+	
+global proc featherPathCallBack(string $path,string $stuff)
+{
+	textFieldButtonGrp -e -tx $path exportJcFeatherPathField;
+	
+	global string $jcFeatherExportUserRibPath;
+	$jcFeatherExportUserRibPath = $path;	
+	optionVar -sv "jcFeather_exportUser" $path;	
+}
+
+proc string getRmanProjPath()
+{
+	string $projPath = `workspace -q -rd`;
+	$projPath += "renderman/";
+	string $fileN = `file -q -sn -shn`;
+	if( $fileN=="" )
+		$fileN = "untitled";
+	else
+	{
+		string $s[];
+		tokenize $fileN "." $s;
+		$fileN = $s[0];
+	}
+	$projPath += $fileN;
+	$projPath += "/";	
+	
+	return $projPath;
+}
+
+proc loadJCFeatherPreferences()
+{
+
+	if (`optionVar -exists "jcFeather_exportUser" `)
+	{
+		string $v=`optionVar -q "jcFeather_exportUser"`;
+		textFieldButtonGrp -e -tx $v exportJcFeatherPathField ;			
+	}
+
+}
+
+
+
+//----------------------------------------------------------------------------------
+global proc jcWriteNodeDataFile()
+{
+	string $dir = `textFieldButtonGrp -q -text browsejcGrowDataPath`;
+	string $file = `textFieldGrp -q -text jcGrowDataInfoFileField`;
+	
+	
+	string $sel[]=`ls -sl`;
+	if(`size $sel`==0) return;
+	
+	for($s in $sel)
+	{
+		string $myNode =jcGetTransformShape($s,"jcPreGuide");
+		if($myNode=="")$myNode= jcGetTransformShape($s,"jcScatter");
+		if($myNode=="")$myNode= jcGetTransformShape($s,"jcPreFeather");
+		if($myNode=="")$myNode= jcGetTransformShape($s,"jcFeatherComponentArray");
+		if($myNode=="") error "Select a jcPreGuide,jcScatter, jcPreFeather,jcFeatherComponentArray node.";
+		string $strippedNode=plugNodeStripped($s);
+		
+		if(`filetest -d $dir`)
+			jcWriteNodeData ($dir+"/"+$file+"_"+$strippedNode)  $myNode;
+	}
+}
+global proc saveVerDirwritePath(string $path,string $stuff)
+{
+	textFieldButtonGrp -e -tx $path browsejcGrowDataPath;
+	}
+global proc saveJCPaintDirwritePath(string $path,string $stuff)
+{
+	textFieldButtonGrp -e -tx $path browsejcPaintPicDirPath;
+	}
+	
+global proc transferJCPaintData()
+{
+	string $sel[]=`ls -sl`;
+	if(`size $sel`!=2) error "Select 2 mesh to transfer data.";
+	string $tempPath = `getenv temp`;
+	int $fileSize=`intFieldGrp -q -value1 featherPaintOutImageSize`;
+	
+	select -r $sel[0];
+	string $outPath=doExportAllJCFeaPaintAttr($tempPath,"temp",$fileSize);
+	select -r $sel[1];
+	doImportAllJCFeaPaintAttr($outPath);
+	
+	sysFile -rm $outPath;
+	
+}
+		
+global proc importJCPaintDataFrom(string $path,string $stuff)
+{
+   doImportAllJCFeaPaintAttr($path);
+}
+global proc exportJCPaintDataTo()
+{
+	string $path = `textFieldButtonGrp -q -tx  browsejcPaintPicDirPath`;
+	string $prefix=`textFieldGrp -q -text jcPaintPicNameInfoFileField`;	
+	int $fileSize=`intFieldGrp -q -value1 featherPaintOutImageSize`;	
+	doExportAllJCFeaPaintAttr($path,$prefix,$fileSize);
+	}
+global proc resetSelectedMeshPaintData()
+{
+	string $result = `confirmDialog -title "Confirm" -message "Are you sure?"
+    -button "Yes" -button "No" -defaultButton "Yes"
+    -cancelButton "No" -dismissString "No"`;
+    if($result=="Yes")
+   		resetJCFeatherPaintData();
+	}
+//////////////-------------------------------------
+//////////////-------------------------------------
+//////////////-------------------------------------
+//////////////-------------------------------------
+//////////////-------------------------------------
+//////////////-------------------------------------
+//////////////-------------------------------------
+//////////////-------------------------------------
+global proc doStartJCFeatherPaint()
+{
+	string $sel[]=`ls -sl`;
+	if(`size $sel`==0)  error "Select the prefeather grow mesh.";
+	
+	string $selVertex[]=stringToStringArray($sel[0],".");//if selection is vertices
+	
+	string $preInputs[];
+	string $preFeaGrowShape;
+	if(`size $selVertex`==1)
+	{
+		$preInputs=getGrowMeshForPreFeaMesh($sel[0]);
+		if(`size $preInputs`!=2) error "Select the prefeather grow mesh.";
+		$preFeaGrowShape = $preInputs[1];
+		select -r $preFeaGrowShape;
+	}
+	else if(`size $selVertex`>1)
+		$preFeaGrowShape=jcGetTransformShape($selVertex[0],"mesh");
+	
+	
+	string $allAttrs[]={"rollIconCheck","yawIconCheck","pitchIconCheck","scallAllIconCheck","lengthIconCheck","thickIconCheck","widthIconCheck","bendIconCheck"};
+	string $meshAttrs[]={"jcFeatherRoll","jcFeatherYaw","jcFeatherPitch","uniformScale","jcFeatherLength","jcFeatherThick","jcFeatherWidth","jcFeatherBend"};
+	for($attr in $meshAttrs)
+		if(!`attributeExists $attr $preFeaGrowShape`&& $attr!="uniformScale")
+		{
+			error ("JCFeather : No paintable JCFeather attributes for mesh "+$preFeaGrowShape+". Click \"Init Feather Paint Attr\" first. ");
+			return;
+		}
+		
+	int $ii=0;
+	for(;$ii<`size $allAttrs`;++$ii)
+		if(`iconTextCheckBox -q -v $allAttrs[$ii]`==1)
+			break;
+	
+	startJCFeatherPaint($preFeaGrowShape,$meshAttrs[$ii]);
+	}
+global proc jcBrushTypeChanged(int $onAttr)
+{	
+	string $allAttrs[]={"paintFeatherBrushGaussian","paintFeatherBrushSoft","paintFeatherBrushSolid","paintFeatherBrushSquare"};
+	int $i=0;
+	if($onAttr>=0)
+	{
+		for( ;$i<4;$i++)
+			if($i != $onAttr)
+				iconTextCheckBox -e -v false $allAttrs[$i];
+	}
+	else
+	{
+		for( ;$i<4;$i++)
+			if(`iconTextCheckBox -q -v $allAttrs[$i]`==1)
+			{
+					$onAttr=$i;
+					break;	
+				}
+	}
+			
+	global string $jcPaintFeatherBrushType;		
+	global string $jcFeatherPainterUI;
+	if($onAttr==0) $jcPaintFeatherBrushType = "gaussian";
+	else if($onAttr==1) $jcPaintFeatherBrushType = "poly";
+	else if($onAttr==2) $jcPaintFeatherBrushType = "solid";
+	else if($onAttr==3) $jcPaintFeatherBrushType = "square";	
+	else return;
+	artAttrCtx -e -stP  $jcPaintFeatherBrushType $jcFeatherPainterUI;	
+	}
+global proc jcFeatherPaintRadiusChange()
+{
+	float $radius=`floatSliderGrp -q -v paintFeatherBrushRadius`;
+	global string $jcFeatherPainterUI;
+	artAttrCtx -e -r  $radius $jcFeatherPainterUI;	
+}
+global proc jcFeatherPaintValueChange()
+{
+	float $val=`floatSliderGrp -q -v paintFeatherBrushValue`;
+	global string $jcFeatherPainterUI;
+	artAttrCtx -e -val $val $jcFeatherPainterUI;	
+}
+global proc jcFeatherPaintOperationChange()
+{
+	string $val=`radioCollection -q -select jcFeatherPaintOperaRadioButton`;
+	
+	string $op;
+	if($val=="paintFeaReplaceRadio") $op="absolute";
+	else if($val=="paintFeaAddRadio")$op="additive";
+	else if($val=="paintFeaScaleRadio")$op="scale";
+	else if($val=="paintFeaSmoothRadio")$op="smooth";
+	
+	global string $jcFeatherPainterUI;
+	artAttrCtx -e -sao $op $jcFeatherPainterUI;	
+}
+global proc floodPaintFeatherData()
+{
+	global string $jcFeatherPainterUI;
+	artAttrCtx -e -clear $jcFeatherPainterUI;
+}
+global proc jcBrushOffCmd(int $onAttr)
+{
+	string $allAttrs[]={"paintFeatherBrushGaussian","paintFeatherBrushSoft","paintFeatherBrushSolid","paintFeatherBrushSquare"};
+	iconTextCheckBox -e -v true $allAttrs[$onAttr];
+	}	
+global proc paintOperationAttrCC(string $onAttr)
+{
+	string $allAttrs[]={"rollIconCheck","yawIconCheck","pitchIconCheck","scallAllIconCheck","lengthIconCheck","thickIconCheck","widthIconCheck","bendIconCheck"};
+	string $offAttr[];
+	for($attr in $allAttrs)
+		if($attr!=$onAttr)
+			$offAttr[`size $offAttr`]=$attr;
+	for($attr in $offAttr)
+		iconTextCheckBox -e -v false $attr;
+		
+	//jcFeatherPaintRadiusChange();
+	jcFeatherPaintValueChange();
+	jcFeatherPaintOperationChange();
+	jcBrushTypeChanged(-1);
+	doStartJCFeatherPaint();
+}
+global proc jcPaintFeatherCallBack()
+{
+	global string $jcFeatherPainterUI;
+	float $rad=`artAttrCtx -q -r $jcFeatherPainterUI`;
+	floatSliderGrp -e -value $rad paintFeatherBrushRadius;
+	}
+global proc particleToScatterNodeData(int $operation)
+{
+	float $toler=`floatSliderGrp -q -value removeScatterToleranceField`;	
+							    
+	string $python="import jcParticleToScatter as jcpts\n";
+	$python+="jcpts.addParticlePosToScatter(";
+	$python+=$operation;
+	$python+=",";
+	$python+=$toler;
+	$python+=")";
+	python($python);
+	}	
+global proc addImagesToScroll()
+{	
+	string $multipleFilters = "All Files (*.*)";
+	string $result[] = `fileDialog2 -fm 4 -fileFilter $multipleFilters -selectFileFilter "Maya Binary" -dialogStyle 2`;
+	for($res in $result)
+		textScrollList -e -a $res jcConvertImageTextScroll;
+}
+
+global proc removeIamgeFromScroll()
+{
+	string $selected[]=`textScrollList -q -si jcConvertImageTextScroll`;
+	for($i in $selected)
+		textScrollList -e -ri $i jcConvertImageTextScroll;
+}
+global proc convertSelectedImages()
+{
+	string $selected[]=`textScrollList -q -si jcConvertImageTextScroll`;
+	string $renderName=`optionMenuGrp -q -v jcTexUniformAttrRenderType`;
+	waitCursor -state on;
+
+	if($renderName=="3Delight")
+		for($i in $selected)
+			catchQuiet(`jcDelightTexmake($i)`);
+	else if($renderName=="Arnold")
+		for($i in $selected)
+			catchQuiet(`jcArnoldTexmake($i)`);
+	else
+		warning "JCFeather : None renders texture to make.\n";
+	waitCursor -state off;
+
+	}
+	
+global proc convertAllImages()
+{
+	string $selected[]=`textScrollList -q -ai jcConvertImageTextScroll`;
+	string $renderName=`optionMenuGrp -q -v jcTexUniformAttrRenderType`;
+	waitCursor -state on;
+	if($renderName=="3Delight")
+		for($i in $selected)
+			catchQuiet(`jcDelightTexmake($i)`);	
+	else if($renderName=="Arnold")
+		for($i in $selected)
+			catchQuiet(`jcArnoldTexmake($i)`);
+	else
+		warning "JCFeather : None renders texture to make.\n";
+	waitCursor -state off;
+	}
+
+global proc addTexturedMeshUniformAttrs(int $operation)
+{
+	string $renderName=`optionMenuGrp -q -v jcTexUniformAttrRenderType`;
+	if($operation)
+		addMeshShell_stForComponentArrayNode($renderName);
+	else
+		removeMeshShell_stForComArrayNode($renderName);
+	}
+	
+global proc createArnoldTexMixShadersFromSelected()
+{
+	string $selected[]=`textScrollList -q -si jcConvertImageTextScroll`;
+	
+	string $outNodes[]=createArnoldJCFeaTexMixNetWork($selected);
+	select -r $outNodes[0];
+	}
+global proc jcFeatherToolsUI()
+{
+	string $rmanP=`getRmanProjPath`+"jcFeatherRib/";
+	sysFile -makeDir $rmanP;
+	 
+	if(`window -ex jcFeatherTools_window`)
+         deleteUI -window jcFeatherTools_window;
+	window -title "jcFeather Tools" -s 1
+ 		-iconName "jct"
+ 		-widthHeight 500 500 jcFeatherTools_window;
+	int $sTime = `playbackOptions -q -min`;
+	int $eTime = `playbackOptions -q -max`; 		
+	scrollLayout scrollLayout;
+	string $mayaLocation= `getenv "MAYA_LOCATION"`;
+	global string $jcFeatherPainterUI;
+	if(!`artAttrCtx -ex $jcFeatherPainterUI`)
+	    artAttrCtx $jcFeatherPainterUI;
+	//artAttrCtx -e -asc "jcPaintFeatherCallBack" $jcFeatherPainterUI;
+	   	
+ 	columnLayout -adjustableColumn true;
+ 		text -label "jcFeather Tools UI";
+     	separator -height 10 ;
+ 		frameLayout -cll 1 -cl 1 -label "Export Feather Rib Or Cache                                                                                         " //-labelAlign "top"
+                -borderStyle "in";
+			columnLayout -adjustableColumn true;
+
+		 	textFieldButtonGrp -label "Export jcFeather"  
+							 	-ed 0 
+							 	-text $rmanP 
+							 	-buttonLabel "browse"  
+							 	-bc ("fileBrowser \"featherPathCallBack\" \"save to\" \"\" 4") exportJcFeatherPathField;
+			textFieldGrp -label "Feather Name" -tx "jcFeather" featherName;
+
+		 	floatFieldGrp -label "Frame Range" -numberOfFields 2 -value1 $sTime -value2 $eTime featherCacheRangeF;
+		 	checkBoxGrp -ann "Use selected jcFeather node or not." -numberOfCheckBoxes 1 -label "Use Selected" -l1 "JCFeather" selectedJCFCheck;
+		 	optionMenuGrp -label "Out Type" featherTypeFile;
+			menuItem -label "rmanRib";
+			menuItem -label "cache";			
+			menuItem -label "cacheRib";
+			//menuItem -label "cacheMr";	
+		 	progressBar -maxValue 100 writeFeaProgBar;
+		 	button -ann "Export jcFeather data out to files." -label "Export Feather Data" -command "writeFeatherFile";
+ 		    setParent ..;
+	    setParent ..;
+	    
+	    
+		//-----------
+	    frameLayout -cll 1 -cl 1 -label "Set Render" -borderStyle "in"; 
+	      	columnLayout -adjustableColumn true;
+	      	rowLayout -numberOfColumns 2 ;
+	      	button -w 265 -ann "Select a renderpass and click to init." -label "Init For 3Delight" -command "source jcFeatherDelight.mel;jcFeatherDelight(1)";
+	      	button -w 265 -ann "Select a renderpass and click to unInit." -label "Uninit For 3Delight" -command "source jcFeatherDelight.mel;jcFeatherDelight(0)";	      		
+ 		  	setParent ..;
+	      	setParent ..;
+	    setParent ..;
+	    string $currentPorject=`workspace -q -rd`; 
+	    
+	    //-----------
+	    frameLayout -cll 1 -cl 1 -label "Write Node Data" -borderStyle "in"; 	
+		    columnLayout -adjustableColumn true; 
+		    textFieldButtonGrp
+				   			-ann "Write Vertex Direction info to this path."
+				    		-ed false
+				        	-label "File Path"
+				        	-text  ($currentPorject+"data/")
+				        	-buttonLabel "browse"
+				        	-bc ("fileBrowser \"saveVerDirwritePath\" \"save to\" \"\" 4")
+				        	browsejcGrowDataPath;
+			 textFieldGrp -label "File Name" -text "growData" jcGrowDataInfoFileField;	
+			 button -ann "Write Selected jcPreGuide node or jcScatter data to File." 
+						-h 25 -label "Do Write" -command "jcWriteNodeDataFile";   	
+	    	 setParent ..;     
+		setParent ..;
+		
+		
+		//-----------
+		frameLayout -cll 1 -cl 1 -label "Particle To Scatter Data" -borderStyle "in";
+			columnLayout -adjustableColumn true;  
+				rowLayout -numberOfColumns 8;
+					iconTextButton -style "iconAndTextVertical" -ann "Select particle and jcScatter. Replace all the uv data with the selected particle." -c "particleToScatterNodeData(1)"
+					    -image1 "replaceScatter.png" -label "Replace";  
+					text "                  ";  
+					iconTextButton -style "iconAndTextVertical" -ann "Select particle and jcScatter. Add selected particle position to scatter." -c "particleToScatterNodeData(0)"
+					    -image1 "addToScatter.png" -label "Add";
+					text "                  ";
+					iconTextButton -style "iconAndTextVertical" -ann "Select particle and jcScatter. Remove selected particle position from scatter." -c "particleToScatterNodeData(2)"
+					    -image1 "removeFromScatter.png" -label "Remove";
+						
+					text "                  ";    
+					iconTextButton -style "iconAndTextVertical" -ann "Select a jcScatter. Clear all the user uv data." -c "particleToScatterNodeData(3)"
+					    -image1 "clearScatter.png" -label "Clear";			    	    
+				setParent ..; 
+				floatSliderGrp -ann "The max distance to add and remove scatter points. It is UV Unit in UV scatter mode, and world unit in InPosition scatter mode." 
+							-minValue 0 -maxValue 1  -field true
+				    		-fieldMinValue -0 -fieldMaxValue 1000   
+							-pre 4 -label "Tolerance"  -value 0.001 removeScatterToleranceField;	
+			setParent ..; 		
+		setParent ..; 
+		
+		
+		//-----------
+		frameLayout -cll 1 -cl 1 -label "Paint PreFeather Attributes" -borderStyle "in"; 	
+		    columnLayout -adjustableColumn true; 
+		    rowLayout -numberOfColumns 3 ;
+		    	button -w 176 -label "Add Feather Paint Attr" -ann "Select a jcPreFeather output mesh to init the paintAttribute." -command "initMeshFeatherPaintAttr()";
+		    	button -w 176 -label "Reset Painting Data   " -ann "Select a mesh to reset all painting data." -command "resetSelectedMeshPaintData";  
+		    	button -w 176 -label "Flood   " -ann "Flood the data with current operation and value." -command "floodPaintFeatherData";  
+	    	setParent ..; 
+		    separator -height 5 ;
+	    	rowLayout -numberOfColumns 6 ;
+	    		text "                                  Profile: ";
+	    		iconTextCheckBox -ann "Gaussian Brush." -image1 "gaussianJCBrush.png" -style "iconOnly" -onc "jcBrushTypeChanged(0)" -ofc "jcBrushOffCmd(0)" paintFeatherBrushGaussian;
+	    		iconTextCheckBox -ann "Soft Brush." -image1 "softJCBrush.png" -v true -style "iconOnly" -onc "jcBrushTypeChanged(1)" -ofc "jcBrushOffCmd(1)" paintFeatherBrushSoft;
+	    		iconTextCheckBox -ann "Solid Brush." -image1 "solidJCBrush.png" -style "iconOnly" -onc "jcBrushTypeChanged(2)" -ofc "jcBrushOffCmd(2)" paintFeatherBrushSolid;
+	    		iconTextCheckBox -ann "Square Brush." -image1 "squareJCBrush.png" -style "iconOnly" -onc "jcBrushTypeChanged(3)" -ofc "jcBrushOffCmd(3)" paintFeatherBrushSquare;
+	    	setParent ..; 
+	    	floatSliderGrp -label "                   Radius: "  -cc "jcFeatherPaintRadiusChange" 
+					    	-field true  -pre 3 -minValue 0.0 -maxValue 5.0  
+					    	-fieldMinValue 0 -fieldMaxValue 500 -ann "Paint brush radius."
+					    	-value 1 paintFeatherBrushRadius;
+    		floatSliderGrp -label "                   Value: "  -field true  -pre 3 -cc "jcFeatherPaintValueChange" 
+				    		-minValue -1 -maxValue 1  
+				    		-fieldMinValue -20 -fieldMaxValue 20 -ann "Paint brush value."
+				    		-value 0.15 paintFeatherBrushValue;
+				    			    	
+	    	radioCollection jcFeatherPaintOperaRadioButton;
+			rowLayout -numberOfColumns 3;
+				text "                            Operation: ";
+			    radioButton -cc "jcFeatherPaintOperationChange" -label "Replace           " paintFeaReplaceRadio;
+			    radioButton -cc "jcFeatherPaintOperationChange" -label "Add" paintFeaAddRadio;
+			setParent ..;
+			rowLayout -numberOfColumns 3;
+				text "                                              ";
+			    radioButton -cc "jcFeatherPaintOperationChange" -label "Scale                " paintFeaScaleRadio;
+			    radioButton -cc "jcFeatherPaintOperationChange" -label "Smooth" paintFeaSmoothRadio;
+    		setParent ..;
+    		radioCollection -edit -select paintFeaAddRadio jcFeatherPaintOperaRadioButton;
+    		
+
+    		
+    		separator -height 5 ;
+		    rowLayout -numberOfColumns 11;
+			    text "Rotate";
+			    iconTextCheckBox -w 45 -ann "Select mesh to paint." -style "iconAndTextVertical" -onc "paintOperationAttrCC(\"rollIconCheck\")" -image1 "paintRotateRoll.png" -label "Roll" rollIconCheck;
+			    iconTextCheckBox -w 45 -ann "Select mesh to paint." -style "iconAndTextVertical" -onc "paintOperationAttrCC(\"yawIconCheck\")" -image1 "paintRotateYaw.png" -label "Yaw" yawIconCheck;
+				iconTextCheckBox -w 45 -ann "Select mesh to paint." -style "iconAndTextVertical" -onc "paintOperationAttrCC(\"pitchIconCheck\")" -image1 "paintRotatePitch.png" -label "Pitch" pitchIconCheck;
+				text " Scale";
+			    
+				iconTextCheckBox -w 75 -ann "Select mesh to paint." -style "iconAndTextVertical" -onc "paintOperationAttrCC(\"scallAllIconCheck\")" -image1 "paintScaleUniform.png" -label "Uniform Scale" scallAllIconCheck;	
+			    iconTextCheckBox -w 45 -ann "Select mesh to paint." -style "iconAndTextVertical" -onc "paintOperationAttrCC(\"lengthIconCheck\")" -image1 "paintScaleLength.png" -label "Length" lengthIconCheck;
+			    iconTextCheckBox -w 45 -ann "Select mesh to paint." -style "iconAndTextVertical" -onc "paintOperationAttrCC(\"thickIconCheck\")" -image1 "paintScaleThick.png" -label "Thick" thickIconCheck;		    
+				iconTextCheckBox -w 45 -ann "Select mesh to paint." -style "iconAndTextVertical" -onc "paintOperationAttrCC(\"widthIconCheck\")" -image1 "paintScaleWidth.png" -label "Width" widthIconCheck;
+		    	text " Bend";
+				
+		    	iconTextCheckBox -w 45 -ann "Select mesh to paint." -style "iconAndTextVertical" -onc "paintOperationAttrCC(\"bendIconCheck\")" -image1 "paintBend.png" -label "Bend" bendIconCheck;
+			setParent ..; 
+
+			frameLayout -cll 1 -cl 1 -label "Paint Data IO" -borderStyle "in"; 
+				columnLayout -adjustableColumn true; 
+				button -ann "Select 2 mesh to transfer the painting data in texture." 
+							-h 25 -label "Transfer Painting Data" -command "transferJCPaintData";
+				intFieldGrp -cal 1 "center" -label "Image Size" -numberOfFields 1 -value1 512 featherPaintOutImageSize;
+				textFieldButtonGrp
+					   			-ann "Export All Painting Data to this folder."
+					    		-ed false
+					        	-label "File Path"
+					        	-text  ($currentPorject+"data/")
+					        	-cal 1 "center"
+					        	-buttonLabel "browse"
+					        	-bc ("fileBrowser \"saveJCPaintDirwritePath\" \"save to\" \"\" 4")
+					        	browsejcPaintPicDirPath;
+				 textFieldGrp -label "File Prefix Name             " -text "paintData" jcPaintPicNameInfoFileField;		
+				 button -ann "Select prefeather mesh to export all painting data to pictures." 
+							-h 25 -label "Export Painting Data" -command "exportJCPaintDataTo";
+							
+				textFieldButtonGrp
+					   			-ann "Import All Painting Data from this folder."
+					    		-ed false
+					        	-label "File Path"
+					        	-text  ($currentPorject+"data/")
+					        	-cal 1 "center"
+					        	-buttonLabel "Import"
+					        	-bc ("fileBrowser \"importJCPaintDataFrom\" \"Import From\" \"\" 4")
+					        	browsejcPaintPicDirPath;	 
+		    	setParent ..;     
+			setParent ..;
+		setParent ..;
+		setParent ..;	
+		//-----------textured mesh
+		frameLayout -cll 1 -cl 1 -label "Textured Mesh Attribute" -borderStyle "in"; 	
+		    columnLayout -adjustableColumn true; 
+		    	rowLayout -numberOfColumns 3 ;
+				    optionMenuGrp -label "Render" jcTexUniformAttrRenderType;
+					menuItem -label "3Delight";
+					menuItem -label "Arnold";			
+					menuItem -label "None";
+					button -ann "Select a jcFeatherComponentArray node to add shell uv attributes to the input meshes." 
+									-w 150 -label "Update Shell Attributes" -command "addTexturedMeshUniformAttrs(1)";
+					button -ann "Select a jcFeatherComponentArray node to remove shell uv attributes in the input meshes." 
+									-w 150 -label "Remove Shell Attributes" -command "addTexturedMeshUniformAttrs(0)";				
+				setParent ..;
+				textScrollList -ann "Convert images to your renderer textures." -ams 1 jcConvertImageTextScroll;
+				string $menuP=`popupMenu`;
+            	menuItem -l "Add Files" -c "addImagesToScroll"; 
+            	menuItem -l "Remove Files" -c "removeIamgeFromScroll"; 
+            	menuItem -l "Convert Selected" -c "convertSelectedImages";
+            	menuItem -l "Convert All" -c "convertAllImages";
+            	menuItem -l "Create Arnold Shaders" -c "createArnoldTexMixShadersFromSelected";
+			setParent ..;    
+		setParent ..;
+			
+	window -e -widthHeight 560 500 jcFeatherTools_window ;
+	showWindow jcFeatherTools_window;
+	loadJCFeatherPreferences();
+}

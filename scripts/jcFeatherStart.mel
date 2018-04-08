@@ -1,0 +1,443 @@
+global	string	$jcFeather_diskCacheFiles[];
+global  string  $jcFeather_diskFeatherFile;
+
+
+//--------------------------------------------------------------------------tools
+//--------------------------------------------------------------------------
+//--------------------------------------------------------------------------
+proc removeCallback(string $node, string $attr, string $callback)
+{
+	if (objExists($node) && `attributeExists $attr $node`)
+	{
+		string	$val = getAttr($node + "." + $attr);
+
+		$val = substitute((";[ \t]*" + $callback + "[ \t]*"), $val, "");
+		$val = substitute(("[ \t]*" + $callback + "[ \t]*;"), $val, "");
+		$val = substitute(("[ \t]*" + $callback + "[ \t]*"), $val, "");
+
+		setAttr -type "string" ($node + "." + $attr) $val;
+	}
+}
+
+proc addCallback(string $node, string $attr, string $callback)
+{
+	if (objExists($node) && `attributeExists $attr $node`)
+	{
+		removeCallback($node, $attr, $callback);
+
+		string	$val = getAttr($node + "." + $attr);
+
+		if (($val == "") || (size(`match "^[ \t]*$" $val`) > 0))
+			$val = $callback;
+		else
+			$val += "; " + $callback;
+
+		setAttr -type "string" ($node + "." + $attr) $val;
+	}
+}
+
+proc int strIndex(string $needle, string $haystack)
+{
+	int	$needleLen = size($needle);
+	int	$haystackLen = size($haystack);
+	int	$i;
+
+	for ($i = 1; $i <= ($haystackLen - $needleLen) + 1; $i++)
+	{
+		if (substring($haystack, $i, $i + $needleLen - 1) == $needle)
+			return $i;
+	}
+
+	return 0;
+}
+
+global proc string jcFeather_getDisplayNode(string $jcFeatherShape)
+{
+	string $sel[] = `listConnections ($jcFeatherShape + ".outputMesh")`;
+	if(size($sel) == 0) 
+	{
+		warning ("No displayMesh for"+$jcFeatherShape+".");
+		return "";
+	}
+	else
+		return $sel[0];
+}
+
+global proc string[] jcFeather_getDisplayGroups()
+{
+	string	$groups[];
+	int		$numGroups= 0;
+	string	$jcFeatherShape;
+	string	$jcFeatherShapes[] = `ls -type jcFeather`;
+
+	for ($jcFeatherShape in $jcFeatherShapes)
+	{
+		$displayNode = jcFeather_getDisplayNode($jcFeatherShape);
+
+		string	$tmp[] = `listRelatives -parent $displayNode`;
+
+		if (size($tmp) == 0) $tmp[0] = $displayNode;
+		string	$group;
+
+		for ($group in $tmp)
+		{
+			int	$i;
+
+			for ($i = 0; $i < $numGroups; $i++)
+				if ($group == $groups[$i]) break;
+
+			if ($i == $numGroups)
+				$groups[$numGroups++] = $group;
+		}
+	}
+
+	return $groups;
+}
+global proc string jcFeatherGetTempDir()
+{
+	string $defaultFeatherRibPath=`getAttr "jcFeatherGlobals.tempFileDir"`;
+	if( $defaultFeatherRibPath=="%temp%")
+		$defaultFeatherRibPath=getenv("TMPDIR");
+		
+	string	$tempDir = $defaultFeatherRibPath;//getenv("TMPDIR");
+	string	$altDir = `workspace -expandName "./data/"`;
+
+	if (($tempDir != "") && (match("/$", $tempDir) == "")) $tempDir += "/";
+
+	if (($tempDir != "") && (!`filetest -d $tempDir`))
+	{
+		if (!`sysFile -makeDir $tempDir`)
+		{
+			warning(
+				"jcFeather: The TMPDIR environment variable points to '" + $tempDir
+				+ "' which does not exist."
+			);
+			warning("jcFeather: Using '" + $altDir + "' instead.");
+			return $altDir;
+		}
+	}
+
+	if (!`filetest -w $tempDir`)
+	{
+		warning(
+			"jcFeather: The TMPDIR environment variable points to '" + $tempDir
+			+ "' to which you do not have write permission."
+		);
+		warning("jcFeather: Using '" + $altDir + "' instead.");
+		return $altDir;
+	}
+
+	return $tempDir;
+}
+
+//------------------------------------------------------------------------ 
+//------------------------------------------------------------------------
+//------------------------------------------------------------------------write feather cache
+//------------------------------------------------------------------------
+//------------------------------------------------------------------------
+global proc string[] jcWriteFeatherCache()
+{
+	string $emptyString[]={};
+	
+	if (!objExists("jcFeatherGlobals")) return $emptyString;
+		
+	global	string	$jcFeather_diskCacheFiles[];
+	clear $jcFeather_diskCacheFiles;
+	
+	int $randomNum=rand(1000,9999);
+	
+	string $hn = system("hostname");
+	string $buffer[];
+	if(endsWith($hn,"\n"))
+	{
+		tokenize $hn "\n" $buffer;
+		if(endsWith($buffer[0],"\r"))
+			tokenize $buffer[0] "\r" $buffer;
+	}
+	else
+		$buffer[0] = $hn;
+	string $sceneName=`file -q -sn`;
+	$sceneName = basenameEx($sceneName);
+	if( $sceneName =="") $sceneName = "jcUntitled";
+	
+	float	$frame = `currentTime -q`;
+	int $frameInt = (int)($frame+0.5);
+	
+	string	$dir = jcFeatherGetTempDir();
+	if(!endsWith($dir,"/"))
+		$dir+="/";	
+	$dir+="jcFeather/";
+	sysFile -makeDir $dir;	
+	$dir+=$sceneName+"/";		
+	sysFile -makeDir $dir;
+	string $dirToBeDel=$dir;
+	print ("jcFeather: "+$dir+"\n");
+	
+	//---------------get feathers for this pass
+	string $currentRl=`editRenderLayerGlobals -query -currentRenderLayer`;
+	string $tempSel[]=getRenderLayerJCFeather($currentRl);
+	string $objFea="";
+	for($o in $tempSel)
+	{
+		$objFea+=" ";
+		$objFea+=$o;
+	}
+	//---------------get feathers for this pass
+	
+			
+	global  string  $jcFeather_diskFeatherFile;
+	string $realName="";
+	
+	$realName +="jcF_";
+	$realName +=$buffer[0];
+	$realName +="_";
+	$realName +=string($randomNum);
+	$jcFeather_diskFeatherFile = $realName+".xml";
+	$dir += $realName;
+		
+	string $writeFeatherCmd="jcWriteFeather ";	
+	$writeFeatherCmd +="-ft 1";
+			
+	$writeFeatherCmd +=" -p \"";
+	$writeFeatherCmd +=	$dir;
+	$writeFeatherCmd +=	"\"";	
+	$writeFeatherCmd +=" -n \"";
+	$writeFeatherCmd +=$objFea;
+	$writeFeatherCmd +=	"\"";
+	if(`size $tempSel`!=0)
+		eval($writeFeatherCmd);
+	
+	$jcFeather_diskCacheFiles[0] = $dirToBeDel;
+	$jcFeather_diskCacheFiles[1] = $dirToBeDel+frameToName($frameInt,4);	
+	
+	return $jcFeather_diskCacheFiles;
+	}
+global proc jcClearDiskFeatherCache()
+{
+	global	string	$jcFeather_diskCacheFiles[];
+	global  string  $jcFeather_diskFeatherFile;	
+	
+	int $jcFeather_deleteFiles = 1;
+	if(`objExists jcFeatherGlobals`)
+		$jcFeather_deleteFiles = `getAttr "jcFeatherGlobals.deleteTempFile"`;
+	else
+		return;
+		
+	string $filePath = $jcFeather_diskCacheFiles[0]+$jcFeather_diskFeatherFile;
+	$filePath = toNativePath($filePath);		
+			
+	string	$file;
+	string $cmd="del /q ";
+	if($jcFeather_deleteFiles)
+	{
+		for ($file in $jcFeather_diskCacheFiles)
+			$cmd += "\""+$file+"\" ";
+		system($cmd);
+		
+		for ($file in $jcFeather_diskCacheFiles)
+			sysFile -red $file;
+			
+		if(`filetest -f $filePath`)
+			sysFile -del $filePath;
+	}
+
+	clear $jcFeather_diskCacheFiles;
+	}
+
+//-------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------      arnold
+//-------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------
+
+proc clearArnoldStandInFile()
+{
+	if(`objExists jcFeaArnoldStdIn`&&`objExists jcFeaArnoldStdInShape`)
+	{
+		lockNode -l false jcFeaArnoldStdIn;
+		lockNode -l false jcFeaArnoldStdInShape;
+		delete jcFeaArnoldStdIn;
+	}
+}
+
+proc setArnoldStandInNodeData()
+{
+	global  string  $jcFeather_diskFeatherFile;
+	global string $jcFeather_diskCacheFiles[];
+	
+	string $filePath = $jcFeather_diskCacheFiles[1]+"/"+$jcFeather_diskFeatherFile;
+	$filePath = fromNativePath($filePath);
+	if(`filetest -f $filePath`&&`objExists "jcFeaArnoldStdInShape"`)
+	{
+		setAttr -type "string" "jcFeaArnoldStdInShape.dso" "$JCFEATHER/bin/jcFeatherArnold.dll";
+		setAttr -type "string" "jcFeaArnoldStdInShape.data" $filePath;
+		
+		float $bbox[6]=`jcQueryData -bb -p $filePath`;
+		setAttr "jcFeaArnoldStdInShape.MinBoundingBox0" $bbox[0];
+		setAttr "jcFeaArnoldStdInShape.MaxBoundingBox0" $bbox[1];
+		
+		setAttr "jcFeaArnoldStdInShape.MinBoundingBox1" $bbox[2];
+		setAttr "jcFeaArnoldStdInShape.MaxBoundingBox1" $bbox[3];
+
+		setAttr "jcFeaArnoldStdInShape.MinBoundingBox2" $bbox[4];
+		setAttr "jcFeaArnoldStdInShape.MaxBoundingBox2" $bbox[5];		
+	}
+}
+	
+proc createArnoldStandInNode()
+{
+	clearArnoldStandInFile();	
+	
+	string $sel[]=`ls -sl`;
+	select -cl;
+	
+	string $empTran=`createNode transform -n jcFeaArnoldStdIn`;
+	string $arnoldStdin=`createNode aiStandIn -n jcFeaArnoldStdInShape -p $empTran`;
+	setAttr "jcFeaArnoldStdInShape.overrideShaders" 0;
+	setAttr "jcFeaArnoldStdInShape.overrideLightLinking" 0;
+	
+	if(`objExists "ArnoldStandInDefaultLightSet"`)
+		sets -add  "ArnoldStandInDefaultLightSet" "jcFeaArnoldStdInShape";
+	else
+	{
+		
+		sets -name "ArnoldStandInDefaultLightSet";
+		sets -add  "ArnoldStandInDefaultLightSet" "jcFeaArnoldStdInShape";
+	}
+	
+	if(`size $sel`>0) select -r $sel;
+}
+	
+	
+global proc addArnoldProcedurePath()
+{
+ 	string $dllPath=getenv("jcFeather");
+ 	if($dllPath=="") 
+ 		error "JCFeather : Cannot find environment variable \"JCFeather\"";
+
+	string $dllPath="$JCFEATHER/bin/";
+	string	$path = `getAttr "defaultArnoldRenderOptions.procedural_searchpath"`;
+	
+		//	If the directory isn't already there, add it.
+		if (strIndex($dllPath, $path) == 0)
+		{
+			if ($path == "")
+				$path = $dllPath;
+			else
+				$path += ":" + $dllPath;
+	
+			setAttr -type "string" "defaultArnoldRenderOptions.procedural_searchpath"
+				$path;
+		}
+}
+global proc addArnoldShaderPath()
+{
+	string  $realPlugin="jcFeather";
+	string	$shaderDir = "$JCFEATHER/shaders/arnold";
+	string	$path = `getAttr "defaultArnoldRenderOptions.shader_searchpath"`;
+	
+		//	If the directory isn't already there, add it.
+		if (strIndex($shaderDir, $path) == 0)
+		{
+			if ($path == "")
+				$path = $shaderDir;
+			else
+				$path += ":" + $shaderDir;
+	
+			setAttr -type "string" "defaultArnoldRenderOptions.shader_searchpath"
+				$path;
+		}
+}	
+global proc jcFeather_arnoldSetupCallbacks()
+{
+	if (!objExists("jcFeatherGlobals")) return;
+	if (!objExists("defaultArnoldRenderOptions")) 
+	{
+		error "JCFeather : Cannot find defaultArnoldRenderOptions node.";
+		return;
+	}
+
+	addCallback(
+		"defaultRenderGlobals",
+		"preRenderMel",
+		"jcFeather_arnoldFrameStart"
+	);
+
+	addCallback(
+		"defaultRenderGlobals",
+		"postRenderMel",
+		"jcFeather_arnoldFrameEnd"
+	);
+}
+global proc jcFeather_arnoldRemoveCallbacks()
+{
+	removeCallback(
+		"defaultRenderGlobals",
+		"preRenderMel",
+		"jcFeather_arnoldFrameStart"
+	);
+
+	removeCallback(
+		"defaultRenderGlobals",
+		"postRenderMel",
+		"jcFeather_arnoldFrameEnd"
+	);
+
+}
+
+global proc 	jcFeather_arnoldFrameStart()
+{
+	string $currentRenderName=`getAttr "defaultRenderGlobals.currentRenderer"`;
+	if($currentRenderName!="arnold") return;
+	addArnoldProcedurePath();
+	addArnoldShaderPath();
+	
+	jcWriteFeatherCache();
+	createArnoldStandInNode();
+	setArnoldStandInNodeData();
+	}
+
+global proc 	jcFeather_arnoldFrameEnd()
+{
+	string $currentRenderName=`getAttr "defaultRenderGlobals.currentRenderer"`;
+	if($currentRenderName!="arnold") return;
+	jcClearDiskFeatherCache();
+	}
+
+	
+	
+	
+//-----------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------jcFeather start general functions
+//-----------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------
+
+global proc jcFeatherStart(int $start)
+{
+	//render name mentalRay , arnold
+	string $currentRenderName=`getAttr "defaultRenderGlobals.currentRenderer"`;
+	
+	if($start)
+		jcFeather_StartInit($currentRenderName);
+	else
+		jcFeather_EndCleanup($currentRenderName);	
+	}
+	
+global proc jcFeather_StartInit(string $renderer)
+{
+	if($renderer=="arnold")
+		jcFeather_arnoldSetupCallbacks();
+// 	else if($renderer=="mentalRay")
+// 		jcFeather_mrSetupCallbacks();
+	}
+	
+global proc jcFeather_EndCleanup(string $renderer)
+{
+	if($renderer=="arnold")
+		jcFeather_arnoldRemoveCallbacks();
+// 	else if($renderer=="mentalRay")
+// 		jcFeather_mrRemoveCallbacks();
+	}	
+	

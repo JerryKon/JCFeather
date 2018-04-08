@@ -1,0 +1,187 @@
+//--------------------------------------------------get uvi file path
+global proc AEjcFeaSysTextureBrowser( string $attr )
+{
+    string $result[] = `fileDialog2 -fm 1 -fileFilter "uvi File(*.uvi)" -dialogStyle 2`;
+	setAttr $attr -type "string" $result[0];
+}
+global proc AEjcFeaSysTextureNameReplace (string $fileAttribute)
+{
+	connectControl -fileName textureNameField $fileAttribute;
+    button -e -c ("AEjcFeaSysTextureBrowser \"" + $fileAttribute + "\"" ) browser;
+}
+global proc AEjcFeaSysfileTextureNameNew (string $fileAttribute)
+{
+	setUITemplate -pst attributeEditorTemplate;
+	rowLayout -nc 3 textureNameLayout;
+		text -label "UVI File";
+		textField textureNameField;
+		symbolButton -image "navButtonBrowse.xpm" browser;
+	setParent ..;
+	setUITemplate -ppt;
+	
+    AEjcFeaSysTextureNameReplace $fileAttribute;
+}
+
+
+//----------------------------------------------------------------------------------------UI Event
+global proc AEjcFeaSysUpdateShapeUseUVI( string $nodeName )
+{
+		int $useUVI = getAttr($nodeName + ".useUVIFile" );
+		editorTemplate -dimControl $nodeName "uSegment" ($useUVI == 1);
+		editorTemplate -dimControl $nodeName "vSegment" ($useUVI == 1);	
+		editorTemplate -dimControl $nodeName "uvOffset" ($useUVI == 1);
+		editorTemplate -dimControl $nodeName "uvTranslate" ($useUVI == 1);	
+		editorTemplate -dimControl $nodeName "jitterDistance" ($useUVI == 1);
+		editorTemplate -dimControl $nodeName "jitterFrequency" ($useUVI == 1);
+		editorTemplate -dimControl $nodeName "uviFile" ($useUVI != 1);										
+		
+}
+global proc AEjcFeatherSystemTemplate( string $nodeName )
+{
+	
+	editorTemplate -beginScrollLayout;
+		editorTemplate -beginLayout "Gerenal Properties"  -collapse 1;
+			editorTemplate -addControl "active";
+			editorTemplate -addControl "displayBarbuleQuality";					
+			editorTemplate -addControl "displayQuality";			
+			editorTemplate -addSeparator;
+			editorTemplate -addControl "gloalScale";
+			editorTemplate -addControl "randScale";			
+			editorTemplate -addSeparator;			
+			editorTemplate -addControl "guidsPerFeather";						
+			editorTemplate -addControl "radius";
+			editorTemplate -addControl "power";
+		editorTemplate -endLayout;	
+		editorTemplate -beginLayout "Grow Position"  -collapse 1;
+			editorTemplate -addControl "renderQuality";
+			editorTemplate -addControl "useUVIFile" "AEjcFeaSysUpdateShapeUseUVI";
+			editorTemplate -addSeparator;
+			editorTemplate -callCustom "AEjcFeaSysfileTextureNameNew" 
+										"AEjcFeaSysTextureNameReplace" 
+										"uviFile";		
+			editorTemplate -addSeparator;		
+			editorTemplate -addControl "uSegment";		
+			editorTemplate -addControl "vSegment";
+			editorTemplate -addControl "uvOffset";												
+			editorTemplate -addControl "uvTranslate";									
+			editorTemplate -addControl "jitterDistance";		
+			editorTemplate -addControl "jitterFrequency";										
+		editorTemplate -endLayout;	
+		
+		
+		editorTemplate -beginLayout "Detail Maps"  -collapse 1;			
+			editorTemplate -callCustom "AEjcFeatherColorTexParmNew" "AEjcFeatherColorTexParmReplace" "colorTex";
+			editorTemplate -callCustom "AEjcFeatherBaldnessTexNew" "AEjcFeatherBaldnessTexReplace" "baldnessTex";
+								
+			editorTemplate -callCustom "AEjcFeatherScaleTexNew" "AEjcFeatherScaleTexReplace" "scaleTex";			
+			editorTemplate -callCustom "AEjcFeatherRadiusTexNew" "AEjcFeatherRadiusTexReplace" "radiusTex";										
+		editorTemplate -endLayout;
+			
+		editorTemplate -beginLayout "Render Stats"  -collapse 1;
+			editorTemplate -addControl "castsShadows";
+			editorTemplate -addControl "";
+			editorTemplate -addControl "receiveShadows";
+			editorTemplate -addControl "";			
+			editorTemplate -addControl "motionBlur";
+			editorTemplate -addControl "";
+			editorTemplate -addControl "primaryVisibility";
+			editorTemplate -addControl "";
+			editorTemplate -addControl "visibleInReflections";
+			editorTemplate -addControl "";
+			editorTemplate -addControl "visibleInRefractions";
+			editorTemplate -addControl "";
+		editorTemplate -endLayout;
+		
+		editorTemplate -beginLayout "Output Feather Mesh"  -collapse 1;	
+			editorTemplate -addControl "outputFeatherMesh";			
+		editorTemplate -endLayout;
+						
+		editorTemplate -beginLayout "Additional Properties"  -collapse 1;	
+			editorTemplate -addControl "randomSeed";
+			editorTemplate -addControl "uvSetName";				
+		editorTemplate -endLayout;	
+		
+		editorTemplate -beginLayout "Proxy BoundingBox"  -collapse 1;	
+			editorTemplate -addControl "displayProxyBoundingBox";		
+		editorTemplate -endLayout;	
+									
+	editorTemplate -beginLayout (uiRes("m_AElocatorTemplate.kLocatorAttributes")) -collapse 1;
+    AElocatorCommon $nodeName;
+    editorTemplate -endLayout;
+    {
+		editorTemplate -suppress "maxVisibilitySamplesOverride";
+		editorTemplate -suppress "maxVisibilitySamples";
+		editorTemplate -suppress "geometryAntialiasingOverride";
+		editorTemplate -suppress "antialiasingLevel";
+		editorTemplate -suppress "shadingSamplesOverride";
+		editorTemplate -suppress "shadingSamples";
+		editorTemplate -suppress "maxShadingSamples";
+		editorTemplate -suppress "volumeSamplesOverride";
+		editorTemplate -suppress "volumeSamples";
+		editorTemplate -suppress "depthJitter";
+		editorTemplate -suppress "ignoreSelfShadowing";
+		editorTemplate -suppress "compInstObjGroups";
+    }
+
+    AEshapeTemplate $nodeName;
+    
+	editorTemplate -addExtraControls;
+	editorTemplate -endScrollLayout;
+}
+
+global proc AEjcFeatherColorTexParmNew (string $attrName)
+{
+	attrNavigationControlGrp 
+		-l "Color Map"
+		-at $attrName
+		"colorTexGrp";
+}
+global proc AEjcFeatherColorTexParmReplace (string $attrName)
+{
+	attrNavigationControlGrp -edit
+		-at $attrName
+		"colorTexGrp";
+}
+
+
+global proc AEjcFeatherBaldnessTexNew (string $attrName)
+{
+	attrNavigationControlGrp 
+		-l "Baldness Map"
+		-at $attrName
+		"baldTexGrp";
+}
+global proc AEjcFeatherBaldnessTexReplace (string $attrName)
+{
+	attrNavigationControlGrp -edit
+		-at $attrName
+		"baldTexGrp";
+}
+
+
+global proc AEjcFeatherScaleTexNew (string $attrName)
+{
+	attrNavigationControlGrp 
+		-l "Scale Map"
+		-at $attrName
+		"scaleTexGrp";
+}
+global proc AEjcFeatherScaleTexReplace (string $attrName)
+{
+	attrNavigationControlGrp -edit
+		-at $attrName
+		"scaleTexGrp";
+}
+global proc AEjcFeatherRadiusTexNew (string $attrName)
+{
+	attrNavigationControlGrp 
+		-l "Radius Map"
+		-at $attrName
+		"radiusTexGrp";
+}
+global proc AEjcFeatherRadiusTexReplace (string $attrName)
+{
+	attrNavigationControlGrp -edit
+		-at $attrName
+		"radiusTexGrp";
+}

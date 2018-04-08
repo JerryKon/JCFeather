@@ -1,0 +1,17 @@
+# depslib dependency file v1.0
+1411394638 source:/home/yingjie/jcFeather/src/jcFeather/randomLib/mersenne.cpp
+	"randomc.h"
+
+1411394638 /home/yingjie/jcFeather/src/jcFeather/randomLib/randomc.h
+	<inttypes.h>
+
+1411394638 source:/home/yingjie/jcFeather/src/jcFeather/randomLib/mother.cpp
+	"randomc.h"
+
+1411394638 source:/home/yingjie/jcFeather/src/jcFeather/randomLib/sfmt.cpp
+	"sfmt.h"
+
+1411394638 /home/yingjie/jcFeather/src/jcFeather/randomLib/sfmt.h
+	<emmintrin.h>
+	"randomc.h"
+

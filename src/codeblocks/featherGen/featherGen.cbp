@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="featherGen" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/featherGen" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option object_output="obj/Debug/" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/featherGen" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option object_output="obj/Release/" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+			<Environment>
+				<Variable name="BOOST_HOME" value="/home/yingjie/lib/boost" />
+				<Variable name="MAYA_LOCATION" value="/usr/autodesk/maya2013-x64" />
+				<Variable name="RANDOMLIB" value="/home/yingjie/jcFeather/src/jcFeather/randomLib" />
+				<Variable name="TINYXML" value="/home/yingjie/jcFeather/src/jcFeather/tinyXml" />
+				<Variable name="ZLIB" value="/home/yingjie/jcFeather/src/jcFeather/zlib" />
+			</Environment>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-fexceptions" />
+			<Add option="-fPIC" />
+			<Add option="-fno-gnu-keywords" />
+			<Add option="-pthread" />
+			<Add option="-Wno-multichar" />
+			<Add option="-Wno-comment" />
+			<Add option="-Wno-sign-compare" />
+			<Add option="-funsigned-char" />
+			<Add option="-fno-strict-aliasing" />
+			<Add option="-fopenmp" />
+			<Add option="-DBits64_" />
+			<Add option="-DUNIX" />
+			<Add option="-D_BOOL" />
+			<Add option="-DFUNCPROTO" />
+			<Add option="-DLINUX_64" />
+			<Add option="-D_GNU_SOURCE" />
+			<Add option="-DREQUIRE_IOSTREAM" />
+			<Add option="-DLINUX" />
+			<Add directory="$(MAYA_LOCATION)/include" />
+			<Add directory="$(BOOST_HOME)/include" />
+			<Add directory="$(ZLIB/include" />
+			<Add directory="$(TINYXML)" />
+			<Add directory="$(RANDOMLIB)" />
+		</Compiler>
+		<Linker>
+			<Add option="-lOpenMaya" />
+			<Add option="-lOpenMayaAnim" />
+			<Add option="-lFoundation" />
+			<Add directory="$(MAYA_LOCATION)/lib" />
+			<Add directory="$(BOOST_HOME)/lib" />
+			<Add directory="$(ZLIB)/include" />
+		</Linker>
+		<Unit filename="../../jcFeather/featherGen/HashTable.cpp" />
+		<Unit filename="../../jcFeather/featherGen/HashTable.h" />
+		<Unit filename="../../jcFeather/featherGen/boostTools.cpp" />
+		<Unit filename="../../jcFeather/featherGen/boostTools.h" />
+		<Unit filename="../../jcFeather/featherGen/cell.cpp" />
+		<Unit filename="../../jcFeather/featherGen/cell.h" />
+		<Unit filename="../../jcFeather/featherGen/featherGenBase.cpp" />
+		<Unit filename="../../jcFeather/featherGen/featherGenBase.h" />
+		<Unit filename="../../jcFeather/featherGen/featherInfo.cpp" />
+		<Unit filename="../../jcFeather/featherGen/featherInfo.h" />
+		<Unit filename="../../jcFeather/featherGen/jcFeatherAbout.cpp" />
+		<Unit filename="../../jcFeather/featherGen/jcFeatherAbout.h" />
+		<Unit filename="../../jcFeather/featherGen/kdtree.cpp" />
+		<Unit filename="../../jcFeather/featherGen/kdtree.h" />
+		<Unit filename="../../jcFeather/featherGen/mathFunctions.cpp" />
+		<Unit filename="../../jcFeather/featherGen/mathFunctions.h" />
+		<Unit filename="../../jcFeather/featherGen/noise.cpp" />
+		<Unit filename="../../jcFeather/featherGen/noise.h" />
+		<Unit filename="../../jcFeather/featherGen/pointInPolygon.h" />
+		<Unit filename="../../jcFeather/featherGen/singleFeather.cpp" />
+		<Unit filename="../../jcFeather/featherGen/singleFeather.h" />
+		<Unit filename="../../jcFeather/featherGen/spline.cpp" />
+		<Unit filename="../../jcFeather/featherGen/spline.h" />
+		<Unit filename="../../jcFeather/featherGen/splineLib.cpp" />
+		<Unit filename="../../jcFeather/featherGen/splineLib.h" />
+		<Unit filename="../../jcFeather/featherGen/surfaceTurtleArray.cpp" />
+		<Unit filename="../../jcFeather/featherGen/surfaceTurtleArray.h" />
+		<Unit filename="../../jcFeather/featherGen/surfaceTurtleIO.cpp" />
+		<Unit filename="../../jcFeather/featherGen/surfaceTurtleIO.h" />
+		<Unit filename="../../jcFeather/featherGen/xmlFeatherAttr.cpp" />
+		<Unit filename="../../jcFeather/featherGen/xmlFeatherAttr.h" />
+		<Extensions>
+			<envvars />
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

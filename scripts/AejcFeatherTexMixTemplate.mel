@@ -1,0 +1,99 @@
+global proc AEjcFeatherTexMixUpdateEnable( string $nodeName )
+{
+		int $enable = getAttr($nodeName + ".sampleEnable0" );
+		editorTemplate -dimControl $nodeName "sampleColor0" ($enable != 1);
+		editorTemplate -dimControl $nodeName "texColor0" ($enable != 1);
+		editorTemplate -dimControl $nodeName "texAlpha0" ($enable != 1);
+		
+		$enable = getAttr($nodeName + ".sampleEnable1" );
+		editorTemplate -dimControl $nodeName "sampleColor1" ($enable != 1);
+		editorTemplate -dimControl $nodeName "texColor1" ($enable != 1);
+		editorTemplate -dimControl $nodeName "texAlpha1" ($enable != 1);
+		
+		$enable = getAttr($nodeName + ".sampleEnable2" );
+		editorTemplate -dimControl $nodeName "sampleColor2" ($enable != 1);
+		editorTemplate -dimControl $nodeName "texColor2" ($enable != 1);
+		editorTemplate -dimControl $nodeName "texAlpha2" ($enable != 1);
+		
+		$enable = getAttr($nodeName + ".sampleEnable3" );
+		editorTemplate -dimControl $nodeName "sampleColor3" ($enable != 1);
+		editorTemplate -dimControl $nodeName "texColor3" ($enable != 1);
+		editorTemplate -dimControl $nodeName "texAlpha3" ($enable != 1);
+		
+		$enable = getAttr($nodeName + ".sampleEnable4" );
+		editorTemplate -dimControl $nodeName "sampleColor4" ($enable != 1);
+		editorTemplate -dimControl $nodeName "texColor4" ($enable != 1);
+		editorTemplate -dimControl $nodeName "texAlpha4" ($enable != 1);
+		
+		$enable = getAttr($nodeName + ".sampleEnable5" );
+		editorTemplate -dimControl $nodeName "sampleColor5" ($enable != 1);	
+		editorTemplate -dimControl $nodeName "texColor5" ($enable != 1);
+		editorTemplate -dimControl $nodeName "texAlpha5" ($enable != 1);	
+}	
+//----------------------------------------------------------------------------------------
+global proc AEjcFeatherTexMixTemplate( string $nodeName )
+{
+	editorTemplate -beginScrollLayout;
+		editorTemplate -beginLayout "Common Properties"  -collapse 0;
+			editorTemplate -addControl "enable";
+
+			editorTemplate -addControl "sampleTexture";
+			editorTemplate -addControl "hueTolerance";
+							
+			editorTemplate -addControl "multiplyColor";
+			editorTemplate -addControl "multiplyAlpha";
+		editorTemplate -endLayout;
+		
+		editorTemplate -beginLayout "Sample Texture"  -collapse 0;
+			editorTemplate -addControl "defaultColor";
+			editorTemplate -addControl "defaultAlpha";	
+			
+			editorTemplate -addSeparator;	
+			editorTemplate -addControl "sampleEnable0" "AEjcFeatherTexMixUpdateEnable";				
+			editorTemplate -addControl "sampleColor0";
+			editorTemplate -addControl "texColor0";
+			editorTemplate -addControl "texAlpha0";
+			editorTemplate -addSeparator;	
+			editorTemplate -addControl "sampleEnable1" "AEjcFeatherTexMixUpdateEnable";	
+			editorTemplate -addControl "sampleColor1";
+			editorTemplate -addControl "texColor1";
+			editorTemplate -addControl "texAlpha1";
+			editorTemplate -addSeparator;	
+			editorTemplate -addControl "sampleEnable2" "AEjcFeatherTexMixUpdateEnable";	
+			editorTemplate -addControl "sampleColor2";
+			editorTemplate -addControl "texColor2";
+			editorTemplate -addControl "texAlpha2";
+			editorTemplate -addSeparator;	
+			editorTemplate -addControl "sampleEnable3" "AEjcFeatherTexMixUpdateEnable";	
+			editorTemplate -addControl "sampleColor3";
+			editorTemplate -addControl "texColor3";
+			editorTemplate -addControl "texAlpha3";
+			editorTemplate -addSeparator;	
+			editorTemplate -addControl "sampleEnable4" "AEjcFeatherTexMixUpdateEnable";	
+			editorTemplate -addControl "sampleColor4";
+			editorTemplate -addControl "texColor4";
+			editorTemplate -addControl "texAlpha4";
+			editorTemplate -addSeparator;	
+			editorTemplate -addControl "sampleEnable5" "AEjcFeatherTexMixUpdateEnable";	
+			editorTemplate -addControl "sampleColor5";
+			editorTemplate -addControl "texColor5";
+			editorTemplate -addControl "texAlpha5";
+		editorTemplate -endLayout;	    
+    	
+// 		{
+// 			editorTemplate -suppress "texColor0";
+// 			editorTemplate -suppress "texAlpha0";
+// 			editorTemplate -suppress "texColor1";
+// 			editorTemplate -suppress "texAlpha1";
+// 			editorTemplate -suppress "texColor2";
+// 			editorTemplate -suppress "texAlpha2";
+// 			editorTemplate -suppress "texColor3";
+// 			editorTemplate -suppress "texAlpha3";
+// 			editorTemplate -suppress "texColor4";
+// 			editorTemplate -suppress "texAlpha4";
+// 			editorTemplate -suppress "texColor5";
+// 			editorTemplate -suppress "texAlpha5";			
+// 			}
+	editorTemplate -addExtraControls;
+	editorTemplate -endScrollLayout;
+}

@@ -1,0 +1,57 @@
+global proc AEjcFeatherControlWeightMapParmNew (string $attrName)
+{
+	attrNavigationControlGrp 
+		-l "Controller Weight Map"
+		-at $attrName
+		"jcPreControlWeightMapGrp";
+}
+global proc AEjcFeatherControlWeightMapParmReplace (string $attrName)
+{
+	attrNavigationControlGrp -edit
+		-at $attrName
+		"jcPreControlWeightMapGrp";
+}
+
+global proc AEjcPreControllerTemplate( string $nodeName )
+{
+		editorTemplate -beginScrollLayout;
+		
+		editorTemplate -beginLayout "Controller Properties"  -collapse 0;
+			editorTemplate -addControl "displayShape";
+			editorTemplate -addControl "controllerSize";
+			editorTemplate -addControl "controllerRotate";
+			editorTemplate -addControl "controllerColorHue";
+			editorTemplate -addControl "bendCurvature";
+			editorTemplate -callCustom "AEjcFeatherControlWeightMapParmNew" "AEjcFeatherControlWeightMapParmReplace" "controllerWeightMap";								
+		editorTemplate -endLayout;
+		
+		
+		editorTemplate -beginLayout (uiRes("m_AElocatorTemplate.kLocatorAttributes")) -collapse 1;
+	    AElocatorCommon $nodeName;
+	    editorTemplate -endLayout;
+	    {
+			editorTemplate -suppress "motionBlur";
+			editorTemplate -suppress "visibleInReflections";
+			editorTemplate -suppress "visibleInRefractions";
+			editorTemplate -suppress "maxVisibilitySamplesOverride";
+			editorTemplate -suppress "maxVisibilitySamples";
+			editorTemplate -suppress "geometryAntialiasingOverride";
+			editorTemplate -suppress "antialiasingLevel";
+			editorTemplate -suppress "shadingSamplesOverride";
+			editorTemplate -suppress "shadingSamples";
+			editorTemplate -suppress "maxShadingSamples";
+			editorTemplate -suppress "volumeSamplesOverride";
+			editorTemplate -suppress "volumeSamples";
+			editorTemplate -suppress "depthJitter";
+			editorTemplate -suppress "ignoreSelfShadowing";
+			editorTemplate -suppress "primaryVisibility";
+			editorTemplate -suppress "compInstObjGroups";
+			editorTemplate -suppress "castsShadows";
+			editorTemplate -suppress "receiveShadows";	
+	    }
+	
+	    AEshapeTemplate $nodeName;
+    
+		editorTemplate -addExtraControls;
+		editorTemplate -endScrollLayout;
+}

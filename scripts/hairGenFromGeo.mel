@@ -1,0 +1,1019 @@
+
+//updated on 2011.9.29 by Jerry
+
+//用于在多边形中心创建骨骼
+global string $jtVertexIDs="";  //所有准备好的多边形的vertex id 号，字符串 空格 形式保存，
+global string $jtSteps="";//记录 $jtVertexIDs中多少个id号一组，该数组的个数大小即为生成的骨骼的段数，
+global string $hgfg_window ;
+global int $jtVertexIDNumDisplay;
+
+//数组中的相同值的个数
+proc int floatArrayCount(float $item, float $list[],float $tolerance)
+{
+	int $result = 0;
+	
+	float $listItem;
+	
+	for ($listItem in $list) {
+		if (abs($item - $listItem)<=$tolerance) $result++;
+	}
+	
+	return $result;
+}
+//去除数组中的相同值
+proc float [] floatArrayRemoveDuplicates(float $list[])
+{
+	float $item, $result[];
+	int    $index = 0;
+	float $f=`floatFieldGrp -q -value1 torlerValue`;
+	for ($item in $list) {
+		if (0 == floatArrayCount($item, $result,$f)) {
+			$result[$index++] = $item;
+		}
+	}
+	return $result;
+}
+//翻转数组中的数值
+proc float [] flipArrayDir(float $array[])
+{
+	int $suvv=`size $array`;
+
+	int $numm=0;
+	if( floor( (float)$suvv/2.0) == (float)$suvv/2.0 )
+			$numm = (int)$suvv/2.0;
+	else
+			$numm = floor( (float)$suvv/2.0);
+	float $temp;
+	int $ii=0;		
+	for($ii=0;$ii<$numm;$ii++)
+	{
+			$temp = $array[$suvv-$ii-1];
+			$array[$suvv-$ii-1] = $array[$ii];
+			$array[$ii] = $temp;
+	}
+	return $array;
+}
+////////////////////////--------------------------------------------
+
+//将多边形所选的点的id号逐个分离出来，返回数组
+global proc string[] takePolyIDS (string $sel){
+  string $return[];
+  int $count=0;
+  string $buffer_1[];
+  $numTokens_1 = `tokenize $sel "." $buffer_1`;
+  string $buffer_2[];
+  $numTokens_2 = `tokenize $sel ":" $buffer_2`;
+  string $buffer_3[];
+  $numTokens_3 = `tokenize $sel "[" $buffer_3`;
+  if($numTokens_2==1){
+    string $temp1[];
+    tokenize $buffer_3[1] "]" $temp1;
+    int $ptCount_1= $temp1[0];	  
+    $return[$count]=$ptCount_1;
+  }
+  if($numTokens_2==2&&$numTokens_3 ==2){//*[3:9]
+    string $temp1[];
+    tokenize $buffer_2[0] "[" $temp1;
+    int $ptCount_1= $temp1[1];
+    string $temp2[];
+    tokenize $buffer_2[1] "]" $temp2;
+    int $ptCount_2= $temp2[0];
+    for($i=$ptCount_1;$i<=$ptCount_2;$i++){
+      $return[$count]=$i;
+      $count++;
+    }
+  }
+  if($numTokens_2==2&&$numTokens_3 ==3){// *[3][6:7]
+    string $temp1[];
+    tokenize $buffer_2[0] "[" $temp1;
+    int $ptCount_1= $temp1[2];
+    string $temp2[];
+    tokenize $buffer_2[1] "]" $temp2;
+    int $ptCount_2= $temp2[0];
+    for($i=$ptCount_1;$i<=$ptCount_2;$i++){
+      $return[$count]=$i;
+      $count++;
+     }
+  }
+return $return;
+}
+
+proc setAimPosto(string $transform,float $pos[])
+{
+	string $locatorName[]=`spaceLocator -p 0 0 0`;
+	select -r $locatorName[0];
+	move -r $pos[0] $pos[1] $pos[2];
+	string $constraintName[]=`aimConstraint -offset 0 0 0 -weight 1 -aimVector 0 0 1 -upVector 0 1 0 -worldUpType "vector" -worldUpVector 0 1 0 $locatorName[0] $transform`;
+	delete $locatorName[0];	
+	};
+	
+global proc clearIDs()
+{
+	global string $jtVertexIDs;
+	global string $jtSteps;
+	$jtVertexIDs="";
+	$jtSteps="";
+	global int $jtVertexIDNumDisplay;	
+	$jtVertexIDNumDisplay=0;
+	scrollField -e -tx $jtVertexIDNumDisplay vertexIDNumDisplay;
+}
+
+//将选择的vertex id号逐个加入全局变量	$jtVertexIDs   $jtSteps
+global proc addIDs()
+{
+	global string $jtVertexIDs;
+	global string $jtSteps;
+
+	string $sel[]=`ls -sl`;
+	if(`size $sel` == 0)
+		error "No poly vertex selected.";
+	$sel = stringArrayRemoveDuplicates($sel);
+	int $count=0;
+	for($node in $sel)
+	{
+		string $vertex[]=`takePolyIDS($node)`;
+		for( $num in $vertex )
+		{
+			$jtVertexIDs += $num;
+			$jtVertexIDs +=" ";
+			$count++;
+		}
+
+	}		
+	$jtSteps += $count;
+	$jtSteps += " ";
+	global int $jtVertexIDNumDisplay;	
+	$jtVertexIDNumDisplay++;
+	scrollField -e -tx $jtVertexIDNumDisplay vertexIDNumDisplay;
+}
+//----------------在自动模式下给所选多边形自动选择添加骨骼的点组,调用addIDs
+global proc autoAddIds(string $meshObj)
+{
+	global string $jtVertexIDs;
+	global string $jtSteps;
+	
+	string $meshObj;
+	int $uv=`radioButtonGrp -q -select polyuvDir`;
+	int $vertNo[]=`polyEvaluate -uv $meshObj`;
+	
+	float $uValue[];
+	float $vValue[];
+	int $i=0;
+	for($i=0;$i<$vertNo[0];$i++) 
+	{
+		float $uv[]=`polyEditUV -q -u -v ($meshObj+".map["+$i+"]")`;
+		$uValue[$i] = $uv[0];
+		$vValue[$i] = $uv[1];
+		}
+	float $torv=`floatFieldGrp -q -value1 torlerValue`;
+	int   $flipDir = `radioButtonGrp -q -select flipDir`;  
+	if($uv==1)
+	{
+		float $tempUValue[]=$uValue;
+		$uValue = sort(floatArrayRemoveDuplicates($uValue));
+		
+		if($flipDir==2)
+			$uValue=flipArrayDir($uValue);
+			
+		clearIDs();
+		select -cl;
+		for( $vv in $uValue )
+		{
+			for( $i=0;$i<`size $tempUValue`;$i++ ) 
+			{
+				if(abs($vv-$tempUValue[$i])<=$torv)
+					select -tgl ($meshObj+".map["+$i+"]");
+			}
+			ConvertSelectionToVertices;
+			addIDs();
+		}
+		
+	}
+	else
+	{
+		float $tempVValue[]=$vValue;
+		$vValue = sort(floatArrayRemoveDuplicates($vValue));
+		if($flipDir==2)
+			$vValue=flipArrayDir($vValue);
+		clearIDs();
+		select -cl;
+		for( $vv in $vValue )
+		{
+			for( $i=0;$i<`size $tempVValue`;$i++ ) 
+			{
+				if(abs($vv-$tempVValue[$i])<=$torv)
+					select -tgl ($meshObj+".map["+$i+"]");
+			}
+			ConvertSelectionToVertices;
+			addIDs();
+		}
+	}
+	
+}
+	
+global proc createJerryHair()
+{
+	int $type = `tabLayout -q -selectTabIndex genHairSysTab`;
+	if($type==2)
+		createPolyHair();
+	else if($type==3)
+	{
+		int $ikcheck=`checkBoxGrp -q -v1 addStuff`;
+		if($ikcheck==0)createSurfaceHair();
+		else createSurfaceHairJoint();
+	}
+}
+
+global proc string createCPOM(string $geo)
+{
+	string $npom;
+	if(`nodeType $geo` == "mesh")
+	{
+		$npom=`createNode "closestPointOnMesh"`;
+		connectAttr ($geo+".outMesh") ($npom+".inMesh");
+		connectAttr ($geo+".worldMatrix") ($npom+".inputMatrix");
+		return $npom;	
+	}
+	else
+	{
+		$npom=`createNode "closestPointOnSurface"`;
+		connectAttr ($geo+".worldSpace[0]") ($npom+".inputSurface");
+		return $npom;
+	}
+}
+global proc float[] getClosestPosition(string $np,float $pos[])	
+{
+		setAttr ($np+".inPositionX")  $pos[0];	
+		setAttr ($np+".inPositionY")  $pos[1];
+		setAttr ($np+".inPositionZ")  $pos[2];
+		float $r[3]=`getAttr ($np+".position")`;
+		
+		return $r;	
+	}
+global proc float[] getClosestUV(string $np,float $pos[])
+{
+		setAttr ($np+".inPositionX")  $pos[0];	
+		setAttr ($np+".inPositionY")  $pos[1];
+		setAttr ($np+".inPositionZ")  $pos[2];
+		float $r[2];
+		$r[0] =`getAttr ($np+".parameterU")`;
+		$r[1] =`getAttr ($np+".parameterV")`;	
+		return $r;
+}
+
+global proc createSurfaceHairJoint()
+{
+	int $dir = `radioButtonGrp  -q -select surfaceUV`;
+	int $numJ[] =`intFieldGrp -q -v jointNumField`;
+	int $sample[] =`intFieldGrp -q -v sampleField`;
+	int $duplicatC[] =`intFieldGrp -q -v dCurveField`;
+	string $grownSurface = `textFieldButtonGrp -q -text getSurface`;
+	int $bindSkin = `checkBoxGrp -q-v1 ifBindSkin`;	
+	
+	string $sel[]=`ls -sl`;
+int $selSize = `size $sel`;
+
+int $i,$j=0;
+float $point[3]={0,0,0};
+float $averageP[3];
+
+string $hairSys[1];
+int $finalSize= $selSize;
+int $addNew;
+string $tempHairs=`textFieldButtonGrp -q -text getHairSys`;
+if(`objExists $tempHairs`==1&&`nodeType $tempHairs`=="hairSystem")
+{
+	$addNew=1;
+	$hairSys[0] = $tempHairs;
+}
+if($addNew == 0)
+{
+	$hairSys[0] = `createNode "hairSystem"`;
+	connectAttr time1.outTime ($hairSys[0]+".currentTime");
+}
+else
+	{
+		string $attr = ($hairSys[0]+".inputHair");
+		$j = getNextFreeMultiIndex($attr, 0);
+	}
+	
+	
+	
+int $parentToJoint=0;
+string $cpogeo;
+if($grownSurface!="")
+{
+	if(`nodeType $grownSurface`!="joint")
+		$cpogeo = createCPOM($grownSurface);
+	else
+		$parentToJoint=1;		
+}
+
+
+
+string $follicTransform;
+
+if($parentToJoint==0)
+ $follicTransform= `createNode "transform" -n "hairFollicle#"`;
+ 
+string $opcTransform = `createNode "transform" -n "outputCurve#"`;
+
+string $curveGrp;
+if($duplicatC[0]>0)
+	$curveGrp = `createNode transform -n "hair_Shave#"`;
+	
+int $ii=0;
+
+
+	
+string $alloutCurves[]={};
+float $jointStartPos[3];
+float $jointSecondPos[3];
+int $closedS=`checkBoxGrp -q -v1 surfaceClose`;
+
+for(;$ii<$finalSize;$ii++)
+{
+	string $node[] = `listRelatives -s $sel[$ii]`;
+	if(`size $node`!=0&&`nodeType $node[0]`!="nurbsSurface")
+		continue;
+	string $jointName="";
+	int $jtIndex=0;
+	int $vid;
+	string $curve = "curve -d 1 ";
+	select -d;
+	
+	int $segi=0;
+	for(;$segi<=$numJ[0];$segi++)
+	{
+		$point[0]=0;$point[1]=0;$point[2]=0;
+		float $steplength = (float)$segi/(float)$numJ[0];
+		
+		int $tempSample=$sample[0];
+			
+		for($i=0;$i<$tempSample;$i++)
+		{
+			float $seglength = (float)$i/(float)$tempSample;
+			float $singleP[];
+			if($dir==1)
+			 	$singleP= `pointOnSurface -u $steplength -v $seglength -position $node[0]`;
+			else
+				$singleP= `pointOnSurface -u $seglength -v $steplength -position $node[0]`;
+				
+			$point[0]+= $singleP[0];
+			$point[1]+= $singleP[1];
+			$point[2]+= $singleP[2];
+		}
+		if(!$closedS) 
+		{
+			if($dir==1)
+			 	$singleP= `pointOnSurface -u $steplength -v 1 -position $node[0]`;
+			else
+				$singleP= `pointOnSurface -u 1 -v $steplength -position $node[0]`;
+				
+			$point[0]+= $singleP[0];
+			$point[1]+= $singleP[1];
+			$point[2]+= $singleP[2];
+			
+			$tempSample+=1;
+		}
+		$averageP[0] = $point[0]/$tempSample;
+		$averageP[1] = $point[1]/$tempSample;
+		$averageP[2] = $point[2]/$tempSample;
+		
+		if($segi==0) $jointStartPos = {$averageP[0],$averageP[1],$averageP[2]};
+		if($segi==1) $jointSecondPos = {$averageP[0],$averageP[1],$averageP[2]};
+			
+		$curve += "-p ";$curve += $averageP[0];$curve += " ";$curve += $averageP[1];$curve += " ";$curve += $averageP[2];$curve += " ";	
+		$jointName += `joint -p $averageP[0] $averageP[1] $averageP[2]` ;
+		$jointName += " ";
+	}
+		string $curveName = eval($curve);
+		rebuildCurve -rpo 1 -rt 0 -end 1 -kr 0 -kcp 0 -kep 0 -kt 0 -s 0 -d 3 -tol 1e-005 $curveName;
+		
+		float $curvePos[]=`pointOnCurve -pr 0.0 -p $curveName`;
+		string $cShapeN[] = `listRelatives -c -s $curveName`;
+		if($parentToJoint==0)
+			$follicT = `createNode "transform" -n "follicle#" -p $follicTransform`;
+		else
+			$follicT = `createNode "transform" -n "follicle#"`;
+		
+		string $follicN = `createNode "follicle" -p $follicT`;
+		
+		if($grownSurface!=""&&$parentToJoint!=1)
+		{
+			connectAttr ($grownSurface+".worldMatrix[0]") ($follicN+".inputWorldMatrix");
+			if(`nodeType $grownSurface`=="nurbsSurface")
+				connectAttr ($grownSurface+".local") ($follicN+".inputSurface");
+			else if(`nodeType $grownSurface`=="mesh")
+				connectAttr ($grownSurface+".worldMesh[0]") ($follicN+".inputMesh");
+			connectAttr ($follicN+".outRotate") ($follicT+".rotate");
+			connectAttr ($follicN+".outTranslate") ($follicT+".translate");
+			float $uv[] = getClosestUV($cpogeo,$curvePos);
+			setAttr ($follicN+".parameterU") $uv[0];
+			setAttr ($follicN+".parameterV") $uv[1];			
+		}
+		else
+		{
+			setAttr ($follicT+".translate") $jointStartPos[0] $jointStartPos[1] $jointStartPos[2];
+			setAimPosto($follicT ,$jointSecondPos);
+			}
+		if( $parentToJoint == 1)
+			parent $follicT $grownSurface;
+										
+		connectAttr ($cShapeN[0]+".worldSpace[0]") ($follicN+".startPosition");			
+		connectAttr ($follicN+".outHair") ($hairSys[0]+".inputHair["+$j+"]");
+		connectAttr ($hairSys[0]+".outputHair["+$j+"]") ($follicN+".currentPosition");	
+		setAttr ($follicN+".pointLock") 1;
+		parent $curveName $follicT;
+		
+		string $outCurveT = `createNode "transform" -n "outCurve#"`;
+		string $opcShapeN = `createNode "nurbsCurve" -p $outCurveT`;
+		parent $outCurveT $opcTransform;
+		$alloutCurves[`size $alloutCurves`] = $outCurveT;
+		connectAttr	($follicN+".outCurve") ($opcShapeN+".create");
+		
+		string $joints[];
+		int $jointSize = `tokenize $jointName " " $joints`;
+		select -r ($joints[0]+".rotatePivot");
+		select -add ($joints[$jointSize-1]+".rotatePivot");
+		select -add $outCurveT ;
+		ikHandle -sol ikSplineSolver -ccv false -pcv false;	
+		
+		if($bindSkin)
+		{
+			select -r $joints[0] ;
+			select -tgl $node[0] ;
+		 	createSkinCluster "-mi 5 -omi true -dr 4 -rui true";
+ 		}
+	 	parent -a $joints[0] $follicT;
+	 	
+		if($duplicatC[0]>0)
+		{
+			int $jji=0;
+			int $curveNums=$duplicatC[0]+1;
+			if($closedS) $curveNums-=1;
+			for($jji=0;$jji<$curveNums;$jji++)
+			{
+				float $dupStep = (float)$jji/(float)$duplicatC[0];
+				string $curveN[];
+				if($dir==1)
+					$curveN=`duplicateCurve -ch 1 -rn 0 -local 0 ($node[0]+".v["+$dupStep+"]")` ;
+				else
+					$curveN=`duplicateCurve -ch 1 -rn 0 -local 0 ($node[0]+".u["+$dupStep+"]")` ;
+				string $newName = `rename $curveN[0] "hsCurve#"`;
+				parent $newName $curveGrp;
+			}	 	
+		}
+		$j++;
+}
+if($grownSurface!=""&&$parentToJoint==0)   delete 	$cpogeo;
+
+select -d;
+//设置当前状态为停歇状态
+if(`size $alloutCurves`>0)
+{
+select $alloutCurves;
+setSelectedHairCurves "current" "rest";
+}
+	}
+global proc parentWithFollicle()
+{
+	//int $zeroPt = `radioButtonGrp  -q -select zeroPosition`;
+	string $grownSurface = `textFieldButtonGrp -q -text getSurface`;
+	
+	string $sel[]=`ls -sl`;
+	int $selSize = `size $sel`;
+	
+	string $follicTransform = `createNode "transform" -n "parentFollicle#"`;
+	int $parentToJoint=0;
+	int $ii=0;
+	string $cpogeo;
+	if($grownSurface!="")
+	{
+		if(`nodeType $grownSurface`!="joint")
+			$cpogeo = createCPOM($grownSurface);
+		else
+			$parentToJoint=1;		
+	}
+		
+	for(;$ii<$selSize;$ii++)
+	{
+
+		float $curvePos[];						
+		if(`nodeType $sel[$ii]`=="transform")
+			$curvePos=`xform -q -ws -rp $sel[$ii]`;
+		else
+		    continue;
+		    
+		string $follicT = `createNode "transform" -n "follicle#" -p $follicTransform`;
+					
+		string $follicN = `createNode "follicle" -p $follicT`;		 
+		if($grownSurface!=""&&$parentToJoint!=1)
+		{
+			connectAttr ($grownSurface+".worldMatrix[0]") ($follicN+".inputWorldMatrix");
+			if(`nodeType $grownSurface`=="nurbsSurface")
+				connectAttr ($grownSurface+".local") ($follicN+".inputSurface");
+			else if(`nodeType $grownSurface`=="mesh")
+				connectAttr ($grownSurface+".outMesh") ($follicN+".inputMesh");
+			connectAttr ($follicN+".outRotate") ($follicT+".rotate");
+			connectAttr ($follicN+".outTranslate") ($follicT+".translate");
+			
+			float $pivotPos[]=getClosestPosition($cpogeo,$curvePos);
+						
+			float $uv[] = getClosestUV($cpogeo,$curvePos);
+			setAttr ($follicN+".parameterU") $uv[0];
+			setAttr ($follicN+".parameterV") $uv[1];		
+		}
+			
+		if( $parentToJoint == 1)
+			parentConstraint -weight 1 $grownSurface $follicT ;
+		parentConstraint -weight 1 -mo $follicT $sel[$ii] ;	
+	}
+	//if($grownSurface!=""&&$parentToJoint==0)   delete 	$cpogeo;
+	select -d;
+}
+	
+	
+global proc createSurfaceHair()
+{
+
+	int $dir = `radioButtonGrp  -q -select surfaceUV`;
+	int $numJ[] =`intFieldGrp -q -v jointNumField`;
+	int $sample[] =`intFieldGrp -q -v sampleField`;
+	int $duplicatC[] =`intFieldGrp -q -v dCurveField`;
+	string $grownSurface = `textFieldButtonGrp -q -text getSurface`;
+	
+	string $sel[]=`ls -sl`;
+	int $selSize = `size $sel`;
+	
+	int $i,$j=0;
+	float $point[3]={0,0,0};
+	float $averageP[3];
+	
+	string $hairSys[1];
+	int $finalSize= $selSize;
+	int $addNew;
+	string $tempHairs=`textFieldButtonGrp -q -text getHairSys`;
+	if(`objExists $tempHairs`==1&&`nodeType $tempHairs`=="hairSystem")
+	{
+		$addNew=1;
+		$hairSys[0] = $tempHairs;
+	}
+	if($addNew == 0)
+	{
+		$hairSys[0] = `createNode "hairSystem"`;
+		connectAttr time1.outTime ($hairSys[0]+".currentTime");
+	}
+	else
+		{
+			string $attr = ($hairSys[0]+".inputHair");
+			$j = getNextFreeMultiIndex($attr, 0);
+		}
+
+	string $follicTransform = `createNode "transform" -n "hairFollicle#"`;
+	string $opcTransform = `createNode "transform" -n "outputCurve#"`;
+		
+	int $ii=0;
+	string $cpogeo;
+	if($grownSurface!="")
+		$cpogeo = createCPOM($grownSurface);
+	
+	string $basecurves[];
+	string $alloutCurves[]={};
+	int $closedS=`checkBoxGrp -q -v1 surfaceClose`;
+	for(;$ii<$finalSize;$ii++)
+	{
+		string $node[] = `listRelatives -s $sel[$ii]`;
+		if(`size $node`!=0&&`nodeType $node[0]`!="nurbsSurface")
+			continue;
+		if($duplicatC[0]>0)
+		{
+				int $jji=0;
+				int $curveNums=$duplicatC[0]+1;
+				if($closedS) $curveNums-=1;
+				for($jji=0;$jji<$curveNums;$jji++)
+				{
+					float $dupStep = (float)$jji/(float)$duplicatC[0];
+					string $curveN[];
+					if($dir==1)
+						$curveN=`duplicateCurve -ch 1 -rn 0 -local 0 ($node[0]+".v["+$dupStep+"]")` ;
+					else
+						$curveN=`duplicateCurve -ch 1 -rn 0 -local 0 ($node[0]+".u["+$dupStep+"]")` ;
+					string $newName = `rename $curveN[0] "hsCurve#"`;
+					
+					$curveName = $newName;
+					delete -ch $curveName;
+					float $curvePos[]=`pointOnCurve -pr 0.0 -p $curveName`;
+					string $cShapeN[] = `listRelatives -c -s $curveName`;
+					string $follicT = `createNode "transform" -n "follicle#" -p $follicTransform`;
+					
+					string $follicN = `createNode "follicle" -p $follicT`;
+					
+					if($grownSurface!="")
+					{
+						connectAttr ($grownSurface+".worldMatrix[0]") ($follicN+".inputWorldMatrix");
+						if(`nodeType $grownSurface`=="nurbsSurface")
+							connectAttr ($grownSurface+".local") ($follicN+".inputSurface");
+						else if(`nodeType $grownSurface`=="mesh")
+							connectAttr ($grownSurface+".worldMesh[0]") ($follicN+".inputMesh");
+						connectAttr ($follicN+".outRotate") ($follicT+".rotate");
+						connectAttr ($follicN+".outTranslate") ($follicT+".translate");
+						float $uv[] = getClosestUV($cpogeo,$curvePos);
+						setAttr ($follicN+".parameterU") $uv[0];
+						setAttr ($follicN+".parameterV") $uv[1];			
+					}
+					else
+					{
+						setAttr ($follicT+".translate") $curvePos[0] $curvePos[1] $curvePos[2];
+						float $secondpr=2.0/(`getAttr ($curveName+".spans")`);
+						float $jointSecondPos[]=`pointOnCurve -pr $secondpr -p $curveName`;
+						setAimPosto($follicT ,$jointSecondPos);
+						}
+											
+					connectAttr ($cShapeN[0]+".worldSpace[0]") ($follicN+".startPosition");			
+					connectAttr ($follicN+".outHair") ($hairSys[0]+".inputHair["+$j+"]");
+					connectAttr ($hairSys[0]+".outputHair["+$j+"]") ($follicN+".currentPosition");	
+					setAttr ($follicN+".pointLock") 1;
+					parent $curveName $follicT;
+					
+					string $outCurveT = `createNode "transform" -n "outCurve#"`;
+					string $opcShapeN = `createNode "nurbsCurve" -p $outCurveT`;
+					parent $outCurveT $opcTransform;
+					$alloutCurves[`size $alloutCurves`] = $outCurveT;
+					connectAttr	($follicN+".outCurve") ($opcShapeN+".create");
+						 
+					$j++;
+				}	 	
+		}	
+}
+		
+if($grownSurface!="")   delete 	$cpogeo;
+
+select -d;
+if(`size $alloutCurves`>0)
+{
+select $alloutCurves;
+setSelectedHairCurves "current" "rest";
+}
+	}
+
+	
+global proc createPolyHair()	
+{
+global string $jtVertexIDs;
+global string $jtSteps;
+
+string $segs[];//存储每一段所用的点的数量
+int $segments ;
+
+string $segIndex[];
+
+if(`radioButtonGrp -q -select polyAddType` == 2 )
+{
+	if($jtVertexIDs=="" || $jtSteps=="")
+	{
+		error "No ID vertex for create hair";
+		return;
+	}	
+	$segments = `tokenize $jtSteps " " $segs`;//存储总共骨骼的段数
+	tokenize $jtVertexIDs " " $segIndex;	
+}
+int $bindSkin = `checkBoxGrp -q-v1 ifBindSkin`;	
+
+string $grownSurface = `textFieldButtonGrp -q -text getSurface`;
+string $sel[]=`ls -sl`;
+int $selSize = `size $sel`;
+string $hairSys[1];
+
+
+
+string $cpogeo;
+int $parentToJoint=0;
+if($grownSurface!="")
+{
+	if(`nodeType $grownSurface`!="joint")
+		$cpogeo = createCPOM($grownSurface);
+	else
+		$parentToJoint=1;		
+}
+		
+int $i,$j=0;
+float $point[3]={0,0,0};
+float $averageP[3];
+
+
+int $finalSize= $selSize;
+int $addNew=0;
+string $follicTransform,$opcTransform;
+string $tempHairs;
+
+		$tempHairs=`textFieldButtonGrp -q -text getHairSys`;
+		
+		if(`objExists $tempHairs`==1&&`nodeType $tempHairs`=="hairSystem")
+		{
+			$addNew=1;
+			$hairSys[0] = $tempHairs;
+		}
+			
+		if($addNew == 0)
+		{
+			$hairSys[0] = `createNode "hairSystem"`;
+			connectAttr time1.outTime ($hairSys[0]+".currentTime");
+		}
+		else
+			{  
+				string $attr = ($hairSys[0]+".inputHair");
+				$j = getNextFreeMultiIndex($attr, 0);
+			}
+		if($parentToJoint==0)	
+			$follicTransform = `createNode "transform" -n "hairFollicle#"`;
+			
+		$opcTransform = `createNode "transform" -n "outputCurve#"`;
+
+
+int $ii=0;
+string $alloutCurves[]={};
+for(;$ii<$finalSize;$ii++)
+{
+	string $node = $sel[$ii];
+	string $nodeShape[] = `listRelatives -s $node`;
+	if(`size $nodeShape`!=0&&`nodeType $nodeShape[0]`!="mesh")
+			continue;
+	//自动模式下为每一个选中的多边形计算点组数据
+	if(`radioButtonGrp -q -select polyAddType` == 1)
+	{
+		autoAddIds($node);
+		$segments = `tokenize $jtSteps " " $segs`;//存储总共骨骼的段数
+		tokenize $jtVertexIDs " " $segIndex;	
+	}
+	string $jointName="";
+	int $jtIndex=0;
+	int $vid;
+	string $curve = "curve -d 1 ";
+	select -d;
+	
+	int $segi=0;
+	float $jointStartPos[3];
+	float $jointSecondPos[3];
+	
+	for(;$segi<$segments;$segi++)
+	{
+		$point[0]=0;$point[1]=0;$point[2]=0;
+		int $segSize = (int)$segs[$segi];
+		for($i=0;$i<$segSize;$i++)
+		{
+			$vid = (int)$segIndex[$jtIndex++];
+			float $singleP[] = `pointPosition -w ($node+".vtx["+$vid+"]")`;
+			$point[0]+= $singleP[0];
+			$point[1]+= $singleP[1];
+			$point[2]+= $singleP[2];
+		}
+		$averageP[0] = $point[0]/$segSize;
+		$averageP[1] = $point[1]/$segSize;
+		$averageP[2] = $point[2]/$segSize;
+		
+		if($segi==0) $jointStartPos = {$averageP[0],$averageP[1],$averageP[2]};
+		if($segi==1) $jointSecondPos = {$averageP[0],$averageP[1],$averageP[2]};
+		
+		$curve += "-p ";$curve += $averageP[0];$curve += " ";$curve += $averageP[1];$curve += " ";$curve += $averageP[2];$curve += " ";	
+		$jointName += `joint -p $averageP[0] $averageP[1] $averageP[2]` ;
+		$jointName += " ";
+	}
+		string $curveName = eval($curve);
+		float $curvePos[]=`pointOnCurve -pr 0.0 -p $curveName`;
+		string $cShapeN[] = `listRelatives -c -s $curveName`;
+		string $follicT;
+		if($parentToJoint==0)
+			$follicT = `createNode "transform" -n "follicle#" -p $follicTransform`;
+		else
+			$follicT = `createNode "transform" -n "follicle#"`;
+			
+		string $follicN = `createNode "follicle" -p $follicT`;
+		
+		if($grownSurface!=""&&$parentToJoint!=1)
+		{
+						connectAttr ($grownSurface+".worldMatrix[0]") ($follicN+".inputWorldMatrix");
+						if(`nodeType $grownSurface`=="nurbsSurface")
+							connectAttr ($grownSurface+".local") ($follicN+".inputSurface");
+						else if(`nodeType $grownSurface`=="mesh")
+							connectAttr ($grownSurface+".worldMesh[0]") ($follicN+".inputMesh");
+						connectAttr ($follicN+".outRotate") ($follicT+".rotate");
+						connectAttr ($follicN+".outTranslate") ($follicT+".translate");
+						float $uv[] = getClosestUV($cpogeo,$curvePos);
+						setAttr ($follicN+".parameterU") $uv[0];
+						setAttr ($follicN+".parameterV") $uv[1];			
+		}
+		//将毛囊移动到骨骼根部，并设置毛囊旋转。
+		else
+		{
+			setAttr ($follicT+".translate") $jointStartPos[0] $jointStartPos[1] $jointStartPos[2];
+			setAimPosto($follicT ,$jointSecondPos);
+			}
+			
+		if( $parentToJoint == 1)
+			parent $follicT $grownSurface;	
+
+					
+		connectAttr ($cShapeN[0]+".worldSpace[0]") ($follicN+".startPosition");
+		connectAttr ($follicN+".outHair") ($hairSys[0]+".inputHair["+$j+"]");
+		connectAttr ($hairSys[0]+".outputHair["+$j+"]") ($follicN+".currentPosition");	
+		setAttr ($follicN+".pointLock") 1;
+		parent $curveName $follicT;
+		
+		string $outCurveT = `createNode "transform" -n "outCurve#"`;
+		$alloutCurves[`size $alloutCurves`] = $outCurveT; //存储outputCurve到数组
+		string $opcShapeN = `createNode "nurbsCurve" -p $outCurveT`;
+		parent $outCurveT $opcTransform;
+		connectAttr	($follicN+".outCurve") ($opcShapeN+".create");
+		
+		string $joints[];
+		int $jointSize = `tokenize $jointName " " $joints`;
+			
+		select -r ($joints[0]+".rotatePivot");
+		select -add ($joints[$jointSize-1]+".rotatePivot");
+		select -add $outCurveT ;
+		ikHandle -sol ikSplineSolver -ccv false -pcv false;	
+		
+		if($bindSkin)
+		{
+			select -r $joints[0] ;
+			select -tgl $node ;
+		 	createSkinCluster "-mi 5 -omi true -dr 4 -rui true";
+ 		}
+	 	parent -a $joints[0] $follicT;
+	 	$j++;
+}
+
+if($grownSurface!=""&&$parentToJoint==0)   delete 	$cpogeo;
+
+select -d;
+if(`size $alloutCurves`>0)
+{
+select $alloutCurves;
+setSelectedHairCurves "current" "rest";
+}
+}
+global proc getGrownSurface()
+{
+	string $sel[]=`ls -sl`;
+	if(`size $sel`==0) error "select polygon or surface.";
+	if(`nodeType $sel[0]`=="joint")
+		textFieldButtonGrp -e -text $sel[0] getSurface;
+	else
+	{
+		string $cShapeN[] = `listRelatives -s $sel[0]`;
+		textFieldButtonGrp -e -text $cShapeN[0] getSurface;
+	}
+}
+	
+global  proc getHairSysNode()
+{
+	string $sel[]=`ls -sl`;
+	if(`size $sel`==0) error "select hairsystem.";
+	string $cShapeN[] = `listRelatives -s $sel[0]`;
+	if(`nodeType $cShapeN[0]`=="hairSystem")
+	textFieldButtonGrp -e -text $cShapeN[0] getHairSys;	
+	}
+	
+global proc disableSD()
+{
+	    int $addDisable =`checkBoxGrp -q -v1 addStuff`;
+	    if($addDisable)   
+	    {  
+	    intFieldGrp -e -en 1 jointNumField;
+    	intFieldGrp -e -en 1 sampleField;
+		}
+		else
+		{
+		    intFieldGrp -e -en 0 jointNumField;
+    		intFieldGrp -e -en 0 sampleField;		
+			}
+	}
+
+global proc hairGenFromGeo()
+{
+	global string $hgfg_window ;
+	if(`window -ex $hgfg_window`)
+         deleteUI -window $hgfg_window;
+	$hgfg_window= `window -title "Hair Gen From Geometry JC3.5"
+ 		-iconName "HGFG"
+ 		-widthHeight 300 210`;
+ 	columnLayout -adjustableColumn true;	
+ 	string $tabs = `tabLayout -innerMarginWidth 5 -innerMarginHeight 5 genHairSysTab`;
+ 		
+ 	string $childCommon=`columnLayout -adjustableColumn true`;
+ 	
+	separator -height 10 ;
+    checkBoxGrp
+        -numberOfCheckBoxes 1
+        -label ""
+        -l1 "BindSkin" -v1 1 ifBindSkin;
+            
+	textFieldButtonGrp
+			-ann "Objects to Grow On.The Objects must freeze transfromations."
+    		-ed true
+        	-label "Grow On"
+        	-text  ""
+        	-cal 1 "center"
+        	-buttonLabel "Pick"
+        	-bc "getGrownSurface"
+        	getSurface;
+   textFieldButtonGrp
+    		-ed true
+        	-label "Add to HairSystem"
+        	-text  ""
+        	-cal 1 "center"
+        	-buttonLabel "Pick"
+        	-bc "getHairSysNode"
+        	getHairSys;
+    setParent ..;
+    
+    string $childPolygon=`columnLayout -adjustableColumn true`;  	    	
+     separator -height 10 ;
+//     text -label "-----   Polygon   -----" -h 15;
+//     separator -height 10 ;  
+        
+    floatFieldGrp -numberOfFields 1
+    -label "Tolerance" -precision 4 -value1 0.001 torlerValue;
+           
+    rowLayout -nc 2;
+	   	text -label "                Add Type";
+	   	
+	    radioButtonGrp  
+		-numberOfRadioButtons 2
+		-labelArray2 "Auto" "Mannully" polyAddType;
+		radioButtonGrp -e -select 1 polyAddType; 
+	setParent ..;
+	
+    rowLayout -nc 2;
+	   	text -label "                Direction";	
+		 radioButtonGrp  
+		-numberOfRadioButtons 2
+		-labelArray2 "U" "V" polyuvDir;
+		radioButtonGrp -e -select 1 polyuvDir; 
+	setParent ..;
+	
+	rowLayout -nc 2;
+		text -label "                Flip";
+	    radioButtonGrp  
+		-numberOfRadioButtons 2
+		-labelArray2 "0 To 1" "1 To 0" flipDir;
+		radioButtonGrp -e -select 1 flipDir; 
+    setParent ..;
+    
+    button -h 35 -label "Clear Vertex IDs" -command "clearIDs";
+    button -h 35 -label "Add Vertex IDs" -command "addIDs";
+    scrollField -h 30 -nl 10 -ed false -tx 0 vertexIDNumDisplay;
+    separator -height 10 ; 
+    button -h 35 -label "Create Hair" -command "createJerryHair()";
+    setParent ..;
+    
+    string $childSurface=`columnLayout -adjustableColumn true`;  
+     separator -height 10 ; 
+//     text -label "-----   NurbsSurface   -----" -h 15;
+//     separator -height 10 ; 
+    
+    checkBoxGrp
+        -numberOfCheckBoxes 1
+        -label "Add"
+        -l1 "IKs" -cc1 "disableSD" addStuff;
+    checkBoxGrp
+        -numberOfCheckBoxes 1
+        -label "Surface form"
+        -l1 "Closed" -v1 1 surfaceClose;
+
+    intFieldGrp -numberOfFields 1 -en 0
+         -label "NumOfJoints" -value1 10 jointNumField;
+    intFieldGrp -numberOfFields 1 -en 0
+         -label "Sample" -value1 4 sampleField;
+    intFieldGrp -numberOfFields 1
+         -label "DuplicatCurves" -value1 4 dCurveField;
+   	rowLayout -nc 2;
+	   	text -label "                Direction";
+	    radioButtonGrp  
+		-numberOfRadioButtons 2
+		-labelArray2 "U" "V" surfaceUV;
+		radioButtonGrp -e -select 1 surfaceUV; 
+    setParent ..;
+    separator -height 10 ; 
+    button -h 35 -label "Create Hair" -command "createJerryHair()";
+    setParent ..;
+    
+    
+    string $childParent=`columnLayout -adjustableColumn true`; 
+    separator -height 10 ; 
+      
+    button -h 35 -label "Parent To" -command "parentWithFollicle";   
+    setParent ..;    
+    
+    tabLayout -edit
+         -tabLabel $childCommon "Common" 
+         -tabLabel $childPolygon "Polygon" 
+         -tabLabel $childSurface "Surface"
+         -tabLabel $childParent "Parent To"         
+         $tabs; 
+           
+	window -e -widthHeight 450 270 $hgfg_window ;
+	showWindow $hgfg_window;
+	clearIDs();
+}

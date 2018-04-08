@@ -1,0 +1,36 @@
+installer=./jcFeather_Maya$1x64
+yes|rm -R $installer
+
+mkdir $installer
+mkdir $installer/bin
+mkdir $installer/doc
+mkdir $installer/icons
+mkdir $installer/plug-ins
+mkdir $installer/scripts
+mkdir $installer/shaders
+mkdir $installer/samples
+
+cp ./bin/delightdso.so $installer/bin/
+cp ./bin/libboost_filesystem.so.1.56.0 $installer/bin/
+cp ./bin/libboost_serialization.so.1.56.0 $installer/bin/
+cp ./bin/libboost_system.so.1.56.0 $installer/bin/
+
+cd $installer/bin/
+ln -s ./libboost_filesystem.so.1.56.0 ./libboost_filesystem.so
+ln -s ./libboost_system.so.1.56.0 ./libboost_system.so
+ln -s ./libboost_serialization.so.1.56.0 ./libboost_serialization.so
+cd ../../
+
+cp ./bin/libjcFeather.so $installer/bin/
+cp ./bin/libRandomLib.so $installer/bin/
+cp ./bin/libTinyXml.so $installer/bin/
+
+cp ./doc/*.pdf $installer/doc/
+cp ./icons/* $installer/icons/
+cp ./plug-ins/$1/*.so $installer/plug-ins/
+cp ./plug-ins/$1/jcFeather_Linux.module $installer/jcFeather.module
+cp -r ./scripts/* $installer/scripts/
+cp -r ./shaders/* $installer/shaders/
+cp ./jcFeather.ico $installer/
+cp -r ./samples/* $installer/samples/
+cp ./readme $installer/readme

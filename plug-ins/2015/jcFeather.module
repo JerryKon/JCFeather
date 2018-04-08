@@ -1,0 +1,5 @@
++ jcFeather 2.8  C:/Program Files/JerryKon/jcFeather2.8_Maya2015X64_Free
+PYTHONPATH +:= scripts
+PATH +:= bin
+LD_LIBRARY_PATH +:= bin
+JCFEATHER :=

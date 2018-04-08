@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_workspace_file>
+	<Workspace title="jcFeatherWorkspace">
+		<Project filename="tinyXml/tinyXml.cbp" />
+		<Project filename="randomLib/randomLib.cbp" />
+		<Project filename="featherGen/featherGen.cbp" />
+		<Project filename="featherMayaPlugin/featherMayaPlugin.cbp" />
+	</Workspace>
+</CodeBlocks_workspace_file>
